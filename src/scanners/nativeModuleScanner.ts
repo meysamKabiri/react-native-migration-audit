@@ -15,6 +15,21 @@ export type NativeModuleFinding = {
   severity: "critical" | "high" | "medium" | "low";
 };
 
+export type NativeModuleGroup = {
+  name: string;
+  platforms: ("android" | "ios")[];
+  files: string[];
+  findingTypes: NativeModuleFinding["type"][];
+  severity: NativeModuleFinding["severity"];
+};
+
+const severityWeight: Record<NativeModuleFinding["severity"], number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
 const nativePatterns = [
   {
     platform: "android" as const,
@@ -62,6 +77,65 @@ function getPlatform(filePath: string): "android" | "ios" | null {
 
 function getMatches(content: string, pattern: RegExp) {
   return [...content.matchAll(pattern)].map((match) => match[0]);
+}
+
+function inferModuleName(filePath: string) {
+  return path
+    .basename(filePath, path.extname(filePath))
+    .replace(/(Package|Module|Bridge|Manager)$/i, "");
+}
+
+function getHighestSeverity(
+  severities: NativeModuleFinding["severity"][],
+): NativeModuleFinding["severity"] {
+  return severities.sort(
+    (a, b) => severityWeight[b] - severityWeight[a],
+  )[0];
+}
+
+export function groupNativeModuleFindings(
+  findings: NativeModuleFinding[],
+): NativeModuleGroup[] {
+  const groups = new Map<
+    string,
+    {
+      name: string;
+      platforms: Set<NativeModuleGroup["platforms"][number]>;
+      files: Set<string>;
+      findingTypes: Set<NativeModuleFinding["type"]>;
+      severities: NativeModuleFinding["severity"][];
+    }
+  >();
+
+  for (const finding of findings) {
+    const name = inferModuleName(finding.file);
+
+    if (!groups.has(name)) {
+      groups.set(name, {
+        name,
+        platforms: new Set(),
+        files: new Set(),
+        findingTypes: new Set(),
+        severities: [],
+      });
+    }
+
+    const group = groups.get(name)!;
+    group.platforms.add(finding.platform);
+    group.files.add(finding.file);
+    group.findingTypes.add(finding.type);
+    group.severities.push(finding.severity);
+  }
+
+  return [...groups.values()]
+    .map((group) => ({
+      name: group.name,
+      platforms: [...group.platforms].sort(),
+      files: [...group.files].sort(),
+      findingTypes: [...group.findingTypes].sort(),
+      severity: getHighestSeverity(group.severities),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function scanNativeModules(

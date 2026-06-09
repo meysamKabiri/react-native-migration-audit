@@ -1,6 +1,7 @@
 import fg from "fast-glob";
 import fs from "fs-extra";
 import path from "node:path";
+import { getSourceFilePatterns } from "./sourceRoots";
 
 export type DeprecatedApiFinding = {
   api: string;
@@ -71,14 +72,11 @@ function countMatches(content: string, pattern: RegExp) {
 export async function scanSourceCode(
   projectPath: string,
 ): Promise<DeprecatedApiFinding[]> {
-  const files = await fg(
-    ["src/**/*.{js,jsx,ts,tsx}", "app/**/*.{js,jsx,ts,tsx}"],
-    {
-      cwd: projectPath,
-      absolute: true,
-      ignore: ["**/node_modules/**", "**/ios/**", "**/android/**"],
-    },
-  );
+  const files = await fg(getSourceFilePatterns(projectPath), {
+    cwd: projectPath,
+    absolute: true,
+    ignore: ["**/node_modules/**", "**/ios/**", "**/android/**"],
+  });
 
   const findings: DeprecatedApiFinding[] = [];
 

@@ -40,7 +40,7 @@ type AuditResultForProposal = {
     area: string;
     risk: "high" | "medium" | "low";
   }[];
-  nativeModuleFindings: unknown[];
+  nativeModuleGroups: unknown[];
   riskLevel: "critical" | "high" | "medium" | "low";
   risks: Risk[];
 };
@@ -67,7 +67,7 @@ function hasSmallOrMediumEffort(result: AuditResultForProposal) {
 }
 
 function getRecommendedService(result: AuditResultForProposal) {
-  if (result.nativeModuleFindings.length > 0) {
+  if (result.nativeModuleGroups.length > 0) {
     return "Manual Review Required" as const;
   }
 
@@ -162,7 +162,7 @@ function getIncludedScope(result: AuditResultForProposal) {
     }
   }
 
-  if (result.nativeModuleFindings.length > 0) {
+  if (result.nativeModuleGroups.length > 0) {
     scope.add("Technical review of custom native module or bridge findings.");
   }
 
@@ -173,7 +173,7 @@ function getIncludedScope(result: AuditResultForProposal) {
 
 export function generateProposal(result: AuditResultForProposal): Proposal {
   const topBlockers = getTopBlockers(result.risks);
-  const hasCustomNativeModules = result.nativeModuleFindings.length > 0;
+  const hasCustomNativeModules = result.nativeModuleGroups.length > 0;
   const recommendedService = getRecommendedService(result);
   const priceRange = getPriceRange(result);
   const includedScope = getIncludedScope(result);

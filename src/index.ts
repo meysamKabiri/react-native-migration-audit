@@ -8,9 +8,13 @@ import { cleanVersion, getUpgradeRecommendation } from "./rules/rnVersionRules";
 import { packageRules } from "./rules/packageRules";
 import { scanSourceCode } from "./scanners/sourceCodeScanner";
 import { scanAst } from "./scanners/astScanner";
-import { scanNativeModules } from "./scanners/nativeModuleScanner";
+import {
+  groupNativeModuleFindings,
+  scanNativeModules,
+} from "./scanners/nativeModuleScanner";
 import { buildMigrationAreas } from "./rules/migrationAreas";
 import { generateProposal, type Proposal } from "./core/generateProposal";
+import { generateMigrationTasks } from "./core/generateMigrationTasks";
 type RiskCategory =
   | "react-native"
   | "android"
@@ -69,6 +73,14 @@ function addRisk(
 async function readFileIfExists(filePath: string) {
   if (!(await fs.pathExists(filePath))) return null;
   return fs.readFile(filePath, "utf8");
+}
+
+function podfileHasActiveUseFrameworks(podfile: string | null) {
+  return (
+    podfile
+      ?.split("\n")
+      .some((line) => line.replace(/#.*/, "").includes("use_frameworks!")) ?? false
+  );
 }
 
 async function detectPackageManager(projectPath: string) {
@@ -390,20 +402,24 @@ ${finding.files
     .join("\n\n");
 }
 function renderNativeModuleFindings(
-  findings: Awaited<ReturnType<typeof scanNativeModules>>,
+  groups: ReturnType<typeof groupNativeModuleFindings>,
 ) {
-  if (!findings.length) {
+  if (!groups.length) {
     return "No custom native module or bridge patterns detected.";
   }
 
-  return findings
+  return groups
     .map(
-      (finding) => `### ${finding.file}
+      (group) => `### ${group.name}
 
-- Platform: ${finding.platform}
-- Type: ${finding.type}
-- Severity: ${finding.severity.toUpperCase()}
-- Matches: ${finding.matches.join(", ")}`,
+- Platforms: ${group.platforms
+        .map((platform) => platform[0].toUpperCase() + platform.slice(1))
+        .join(", ")}
+- Severity: ${group.severity.toUpperCase()}
+- Files:
+${group.files.map((file) => `  - ${file}`).join("\n")}
+- Finding types:
+${group.findingTypes.map((type) => `  - ${type}`).join("\n")}`,
     )
     .join("\n\n");
 }
@@ -499,7 +515,7 @@ ${proposal.outOfScope.map((item) => `- ${item}`).join("\n")}`;
 function calculateComplexityScore(result: {
   risks: Risk[];
   riskyDependencies: unknown[];
-  nativeModuleFindings: unknown[];
+  nativeModuleGroups: unknown[];
   astScan: {
     deprecatedImports: unknown[];
     reactPatterns: unknown[];
@@ -594,14 +610,14 @@ function calculateComplexityScore(result: {
     );
   }
 
-  if (result.nativeModuleFindings.length > 0) {
-    const points = Math.min(result.nativeModuleFindings.length * 8, 25);
+  if (result.nativeModuleGroups.length > 0) {
+    const points = Math.min(result.nativeModuleGroups.length * 8, 25);
     score += points;
     drivers.push(
-      `${result.nativeModuleFindings.length} native module finding(s): +${points}`,
+      `${result.nativeModuleGroups.length} custom native module group(s): +${points}`,
     );
   } else {
-    drivers.push("No custom native module findings: +0");
+    drivers.push("No custom native module groups: +0");
   }
 
   if (result.nativeVersions.androidGradlePlugin) {
@@ -640,8 +656,10 @@ program
   .name("rn-rescue-audit")
   .description("React Native / Expo upgrade audit tool")
   .argument("<projectPath>", "Path to React Native project")
-  .action(async (projectPath: string) => {
+  .option("-o, --out <dir>", "Directory to write report.md and audit-result.json")
+  .action(async (projectPath: string, options: { out?: string }) => {
     const absolutePath = path.resolve(projectPath);
+    const outputDir = path.resolve(options.out ?? process.cwd());
     const packageJsonPath = path.join(absolutePath, "package.json");
 
     if (!(await fs.pathExists(packageJsonPath))) {
@@ -744,6 +762,7 @@ program
         reactPatterns: [],
       } as ReturnType<typeof scanAst>,
       nativeModuleFindings: [] as Awaited<ReturnType<typeof scanNativeModules>>,
+      nativeModuleGroups: [] as ReturnType<typeof groupNativeModuleFindings>,
       complexityScore: {
         score: 0,
         classification: "low",
@@ -767,7 +786,7 @@ program
     result.nativeVersions = {
       androidGradlePlugin: androidGradlePluginMatch?.[1] ?? null,
       gradle: gradleVersionMatch?.[1] ?? null,
-      hasUseFrameworks: podfile?.includes("use_frameworks!") ?? false,
+      hasUseFrameworks: podfileHasActiveUseFrameworks(podfile),
     };
 
     if (result.expo && result.hasIOS && result.hasAndroid) {
@@ -1017,6 +1036,9 @@ program
     result.upgradeTasks = generateUpgradeTasks(result);
     result.deprecatedApiFindings = await scanSourceCode(absolutePath);
     result.nativeModuleFindings = await scanNativeModules(absolutePath);
+    result.nativeModuleGroups = groupNativeModuleFindings(
+      result.nativeModuleFindings,
+    );
     result.astScan = scanAst(absolutePath);
     result.migrationAreas = buildMigrationAreas(
       result.astScan.packageUsages.map((usage) => usage.packageName),
@@ -1041,13 +1063,13 @@ program
         `${result.astScan.reactPatterns.length} older React pattern group(s) detected through AST analysis.`,
       );
     }
-    if (result.nativeModuleFindings.length > 0) {
+    if (result.nativeModuleGroups.length > 0) {
       addRisk(
         result.risks,
         "react-native",
         "high",
         "Custom Native Module Patterns Detected",
-        `${result.nativeModuleFindings.length} native module/bridge pattern(s) detected in iOS/Android source files. These should be manually reviewed before migration.`,
+        `${result.nativeModuleGroups.length} custom native module group(s) detected in iOS/Android source files. These should be manually reviewed before migration.`,
       );
     }
     const migrationPlan = createMigrationPlan(result);
@@ -1058,7 +1080,7 @@ program
 
     const astScanSection = renderAstScan(result.astScan);
     const nativeModuleSection = renderNativeModuleFindings(
-      result.nativeModuleFindings,
+      result.nativeModuleGroups,
     );
     const highRiskMigrationAreas = result.migrationAreas.filter(
       (area) => area.risk === "high",
@@ -1259,16 +1281,22 @@ ${upgradeTasksSection}
 ${proposalSection}
 `;
 
-    const reportPath = path.join(process.cwd(), "report.md");
+    await fs.ensureDir(outputDir);
+
+    const reportPath = path.join(outputDir, "report.md");
     await fs.writeFile(reportPath, report);
 
-    const jsonPath = path.join(process.cwd(), "audit-result.json");
+    const jsonPath = path.join(outputDir, "audit-result.json");
     await fs.writeJson(jsonPath, result, {
       spaces: 2,
     });
 
+    const migrationTasksPath = path.join(outputDir, "migration-tasks.md");
+    await fs.writeFile(migrationTasksPath, generateMigrationTasks(result));
+
     console.log(chalk.blue(`\nReport generated: ${reportPath}`));
     console.log(chalk.blue(`JSON generated: ${jsonPath}`));
+    console.log(chalk.blue(`Migration tasks generated: ${migrationTasksPath}`));
 
     console.log(chalk.green("\nReact Native Audit Result\n"));
     console.log(JSON.stringify(result, null, 2));

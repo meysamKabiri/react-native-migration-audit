@@ -1,6 +1,7 @@
 import { Project, SyntaxKind } from "ts-morph";
 import path from "node:path";
 import { classifyPackage } from "../rules/packageCategories";
+import { getSourceFilePatterns } from "./sourceRoots";
 export type PackageUsage = {
   packageName: string;
   files: string[];
@@ -104,10 +105,11 @@ export function scanAst(projectPath: string): AstScanResult {
     },
   });
 
-  project.addSourceFilesAtPaths([
-    path.join(projectPath, "src/**/*.{ts,tsx,js,jsx}"),
-    path.join(projectPath, "app/**/*.{ts,tsx,js,jsx}"),
-  ]);
+  project.addSourceFilesAtPaths(
+    getSourceFilePatterns(projectPath).map((pattern) =>
+      path.join(projectPath, pattern),
+    ),
+  );
 
   const packageUsageMap = new Map<string, Set<string>>();
   const deprecatedImportMap = new Map<string, Set<string>>();

@@ -1,3 +1,5 @@
+import { isBluetoothPackage } from "./packageCategories";
+
 export type MigrationArea = {
   area: string;
   risk: "high" | "medium" | "low";
@@ -28,7 +30,7 @@ const areaRules = [
   {
     area: "Bluetooth",
     risk: "high" as const,
-    match: ["ble", "bluetooth"],
+    match: ["bluetooth"],
     reason:
       "Bluetooth integrations usually depend on native permissions, Android/iOS APIs, and device-specific behavior.",
     suggestedAction:
@@ -95,9 +97,13 @@ export function buildMigrationAreas(packageNames: string[]): MigrationArea[] {
   const areas: MigrationArea[] = [];
 
   for (const rule of areaRules) {
-    const matchedPackages = packageNames.filter((packageName) =>
-      rule.match.some((keyword) => packageName.toLowerCase().includes(keyword)),
-    );
+    const matchedPackages = packageNames.filter((packageName) => {
+      if (rule.area === "Bluetooth") return isBluetoothPackage(packageName);
+
+      return rule.match.some((keyword) =>
+        packageName.toLowerCase().includes(keyword),
+      );
+    });
 
     if (matchedPackages.length > 0) {
       areas.push({

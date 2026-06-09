@@ -16,6 +16,18 @@ export type PackageCategoryRule = {
   suggestedAction: string;
 };
 
+export function isBluetoothPackage(packageName: string) {
+  const normalizedName = packageName.toLowerCase();
+
+  return (
+    normalizedName.includes("bluetooth") ||
+    normalizedName.includes("ble-plx") ||
+    normalizedName.includes("-ble") ||
+    normalizedName.includes("ble-") ||
+    normalizedName === "react-native-ble-plx"
+  );
+}
+
 export function classifyPackage(packageName: string): PackageCategoryRule {
   if (packageName.includes("camera")) {
     return {
@@ -27,7 +39,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("ble") || packageName.includes("bluetooth")) {
+  if (isBluetoothPackage(packageName)) {
     return {
       category: "bluetooth",
       risk: "high",
