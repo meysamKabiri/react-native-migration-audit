@@ -15,6 +15,12 @@ This plan turns the audit into small Codex-ready migration prompts. Paste one ta
 - Project: walletTourist.
 - Workflow: bare-react-native.
 - React Native: ^0.82.0; React: 19.1.1; TypeScript: ^5.8.3.
+- Baseline readiness: NOT-READY.
+- Baseline is not ready for immediate migration. Resolve or explicitly plan the blockers before asking Codex to change dependencies or native files.
+- Readiness blocker: Do not start broad migration changes until custom native modules are reviewed and assigned explicit bridge tasks.
+- Readiness warning: Add or document a typecheck command so migration type regressions are visible.
+- Required readiness action: Do not start broad migration changes until custom native modules are reviewed and assigned explicit bridge tasks.
+- Required readiness action: Add or document a typecheck command so migration type regressions are visible.
 
 ### Allowed changes
 
@@ -57,6 +63,7 @@ This plan turns the audit into small Codex-ready migration prompts. Paste one ta
 ### Success criteria
 
 - Baseline commands and failures are documented.
+- Baseline readiness blockers are resolved or explicitly documented.
 - No migration changes have been made yet.
 
 ### Rollback note

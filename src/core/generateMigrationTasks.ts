@@ -31,6 +31,13 @@ type AuditResultForMigrationTasks = {
     gradle: string | null;
     hasUseFrameworks: boolean;
   };
+  baselineReadiness: {
+    status: "ready" | "warning" | "not-ready";
+    summary: string;
+    blockers: string[];
+    warnings: string[];
+    requiredActions: string[];
+  };
   riskyDependencies: {
     name: string;
     version: string;
@@ -270,6 +277,23 @@ export function generateMigrationTasks(result: AuditResultForMigrationTasks) {
         `React Native: ${result.reactNative ?? "not detected"}; React: ${
           result.react ?? "not detected"
         }; TypeScript: ${result.typescript ?? "not detected"}.`,
+        `Baseline readiness: ${result.baselineReadiness.status.toUpperCase()}.`,
+        result.baselineReadiness.summary,
+        ...(result.baselineReadiness.blockers.length
+          ? result.baselineReadiness.blockers.map(
+              (blocker) => `Readiness blocker: ${blocker}`,
+            )
+          : ["No baseline readiness blockers detected by the audit."]),
+        ...(result.baselineReadiness.warnings.length
+          ? result.baselineReadiness.warnings.map(
+              (warning) => `Readiness warning: ${warning}`,
+            )
+          : ["No baseline readiness warnings detected by the audit."]),
+        ...(result.baselineReadiness.requiredActions.length
+          ? result.baselineReadiness.requiredActions.map(
+              (action) => `Required readiness action: ${action}`,
+            )
+          : ["No baseline readiness actions detected by the audit."]),
       ],
       allowedChanges: ["Documentation-only notes about baseline status."],
       forbiddenChanges: ["Do not edit app, native, or dependency files in this task."],
@@ -283,6 +307,7 @@ export function generateMigrationTasks(result: AuditResultForMigrationTasks) {
       validationCommands: [getPackageManagerCommand(result), ...verificationCommands],
       successCriteria: [
         "Baseline commands and failures are documented.",
+        "Baseline readiness blockers are resolved or explicitly documented.",
         "No migration changes have been made yet.",
       ],
       rollbackNote: "No code rollback should be needed because this task should not edit code.",

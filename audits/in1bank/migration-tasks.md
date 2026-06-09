@@ -15,6 +15,17 @@ This plan turns the audit into small Codex-ready migration prompts. Paste one ta
 - Project: in1bank.
 - Workflow: bare-react-native.
 - React Native: 0.63.3; React: 16.13.1; TypeScript: 3.9.7.
+- Baseline readiness: NOT-READY.
+- Baseline is not ready for immediate migration. Resolve or explicitly plan the blockers before asking Codex to change dependencies or native files.
+- Readiness blocker: Do not start migration immediately. Create a staged upgrade plan for this old React Native baseline first.
+- Readiness blocker: Do not start migration immediately. Review critical blockers and prepare a staged rescue plan first.
+- Readiness blocker: Do not start broad migration changes until custom native modules are reviewed and assigned explicit bridge tasks.
+- Readiness blocker: Do not start migration immediately. Plan Android Gradle Plugin and Gradle upgrades as controlled native tooling tasks.
+- No baseline readiness warnings detected by the audit.
+- Required readiness action: Do not start migration immediately. Create a staged upgrade plan for this old React Native baseline first.
+- Required readiness action: Do not start migration immediately. Review critical blockers and prepare a staged rescue plan first.
+- Required readiness action: Do not start broad migration changes until custom native modules are reviewed and assigned explicit bridge tasks.
+- Required readiness action: Do not start migration immediately. Plan Android Gradle Plugin and Gradle upgrades as controlled native tooling tasks.
 
 ### Allowed changes
 
@@ -58,6 +69,7 @@ This plan turns the audit into small Codex-ready migration prompts. Paste one ta
 ### Success criteria
 
 - Baseline commands and failures are documented.
+- Baseline readiness blockers are resolved or explicitly documented.
 - No migration changes have been made yet.
 
 ### Rollback note

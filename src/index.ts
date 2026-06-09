@@ -15,6 +15,10 @@ import {
 import { buildMigrationAreas } from "./rules/migrationAreas";
 import { generateProposal, type Proposal } from "./core/generateProposal";
 import { generateMigrationTasks } from "./core/generateMigrationTasks";
+import {
+  generateBaselineReadiness,
+  type BaselineReadiness,
+} from "./core/generateBaselineReadiness";
 type RiskCategory =
   | "react-native"
   | "android"
@@ -423,6 +427,44 @@ ${group.findingTypes.map((type) => `  - ${type}`).join("\n")}`,
     )
     .join("\n\n");
 }
+
+function renderBaselineReadiness(readiness: BaselineReadiness) {
+  return `- Baseline Readiness: ${readiness.status.toUpperCase()}
+- Summary: ${readiness.summary}
+
+### Checks
+
+${readiness.checks
+  .map(
+    (check) => `- **${check.name}** (${check.status.toUpperCase()}): ${check.details} ${check.recommendation}`,
+  )
+  .join("\n")}
+
+### Blockers
+
+${
+  readiness.blockers.length
+    ? readiness.blockers.map((blocker) => `- ${blocker}`).join("\n")
+    : "- No baseline readiness blockers detected."
+}
+
+### Warnings
+
+${
+  readiness.warnings.length
+    ? readiness.warnings.map((warning) => `- ${warning}`).join("\n")
+    : "- No baseline readiness warnings detected."
+}
+
+### Required Actions Before Migration
+
+${
+  readiness.requiredActions.length
+    ? readiness.requiredActions.map((action) => `- ${action}`).join("\n")
+    : "- No baseline readiness blockers detected."
+}`;
+}
+
 function renderAstScan(scan: ReturnType<typeof scanAst>) {
   const sections: string[] = [];
 
@@ -739,6 +781,14 @@ program
         gradle: null as string | null,
         hasUseFrameworks: false,
       },
+      baselineReadiness: {
+        status: "not-ready",
+        summary: "Baseline readiness has not been calculated yet.",
+        checks: [],
+        blockers: [],
+        warnings: [],
+        requiredActions: [],
+      } as BaselineReadiness,
 
       scripts: packageJson.scripts ?? {},
       hasIOSScript: Boolean(packageJson.scripts?.ios),
@@ -1101,11 +1151,15 @@ program
     result.riskLevel = getRiskLevel(result.risks);
     result.effortEstimate = estimateEffort(result.risks);
     result.complexityScore = calculateComplexityScore(result);
+    result.baselineReadiness = generateBaselineReadiness(result);
     result.proposal = generateProposal(result);
     const executiveSummary = createExecutiveSummary(result);
     const topBlockers = getTopBlockers(result.risks);
     const migrationAreasSection = renderMigrationAreas(result.migrationAreas);
     const proposalSection = renderProposal(result.proposal);
+    const baselineReadinessSection = renderBaselineReadiness(
+      result.baselineReadiness,
+    );
     const report = `# React Native Upgrade Audit Report
     
 
@@ -1125,6 +1179,10 @@ ${executiveSummary}
 - Android folder: ${result.hasAndroid ? "Yes" : "No"}
 - Package manager: ${result.packageManager}
 - Workflow: ${result.workflow}
+
+## Baseline Readiness
+
+${baselineReadinessSection}
 
 ## Migration Complexity Score
 
