@@ -1,0 +1,30 @@
+# AGENTS.md
+
+## Repo Shape
+
+- This repo is a TypeScript CLI for auditing external React Native/Expo projects; it is not itself a React Native app.
+- The CLI entrypoint is `src/index.ts`; package scripts run it through `tsx` and require a `<projectPath>` argument.
+- Use Yarn v1 here (`yarn.lock` is a Yarn v1 lockfile).
+
+## Commands
+
+- Install dependencies with `yarn install`.
+- Run an audit with `yarn run audit <path-to-rn-project>` or `yarn run dev <path-to-rn-project>`.
+- There are currently no configured `test`, `lint`, or `typecheck` scripts and no root `tsconfig.json`; do not claim those checks exist unless you add them.
+
+## Generated Outputs
+
+- Each CLI run writes `report.md` and `audit-result.json` to the current working directory (`process.cwd()`), not to the audited project path.
+- Treat root `report.md` and `audit-result.json` as generated audit output; avoid hand-editing them unless the task is specifically about report content.
+
+## Scanner Boundaries
+
+- Source scanning only covers `src/**/*.{js,jsx,ts,tsx}` and `app/**/*.{js,jsx,ts,tsx}` under the target project, excluding `node_modules`, `ios`, and `android`.
+- Native module scanning only covers target `android/**/*.{java,kt}` and `ios/**/*.{h,m,mm,swift}`, excluding common generated/build directories.
+- AST scanning uses `ts-morph` with `skipAddingFilesFromTsConfig: true`; it does not read the target project's TypeScript config.
+
+## Rule Updates
+
+- Known risky dependency names live in `src/rules/riskyDependencies.ts`; richer metadata for exact packages lives in `src/rules/packageRules.ts`.
+- Heuristic package classification for imported RN-related packages lives in `src/rules/packageCategories.ts`.
+- Migration-sensitive area grouping lives in `src/rules/migrationAreas.ts` and is built from AST-detected package usage.
