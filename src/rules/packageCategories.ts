@@ -16,20 +16,56 @@ export type PackageCategoryRule = {
   suggestedAction: string;
 };
 
-export function isBluetoothPackage(packageName: string) {
-  const normalizedName = packageName.toLowerCase();
+function getPackageTokens(packageName: string) {
+  return packageName
+    .toLowerCase()
+    .replace(/^@/, "")
+    .split(/[\/._-]+/)
+    .filter(Boolean);
+}
 
+function packageNameEquals(packageName: string, names: string[]) {
+  const normalizedName = packageName.toLowerCase();
+  return names.some((name) => normalizedName === name);
+}
+
+function packageNameStartsWith(packageName: string, prefixes: string[]) {
+  const normalizedName = packageName.toLowerCase();
+  return prefixes.some((prefix) => normalizedName.startsWith(prefix));
+}
+
+export function packageHasToken(packageName: string, tokens: string[]) {
+  const packageTokens = getPackageTokens(packageName);
+  return tokens.some((token) => packageTokens.includes(token));
+}
+
+export function packageHasTokenSequence(packageName: string, sequence: string[]) {
+  const packageTokens = getPackageTokens(packageName);
+
+  return packageTokens.some((_, index) =>
+    sequence.every((token, offset) => packageTokens[index + offset] === token),
+  );
+}
+
+export function isBluetoothPackage(packageName: string) {
   return (
-    normalizedName.includes("bluetooth") ||
-    normalizedName.includes("ble-plx") ||
-    normalizedName.includes("-ble") ||
-    normalizedName.includes("ble-") ||
-    normalizedName === "react-native-ble-plx"
+    packageNameEquals(packageName, [
+      "react-native-ble-plx",
+      "react-native-ble-manager",
+      "react-native-bluetooth-state-manager",
+    ]) ||
+    packageNameStartsWith(packageName, [
+      "react-native-ble-",
+      "@config-plugins/react-native-ble-",
+    ]) ||
+    packageHasToken(packageName, ["bluetooth"]) ||
+    packageHasTokenSequence(packageName, ["ble", "plx"]) ||
+    packageHasTokenSequence(packageName, ["ble", "manager"])
   );
 }
 
 export function classifyPackage(packageName: string): PackageCategoryRule {
-  if (packageName.includes("camera")) {
+  if (packageHasToken(packageName, ["camera", "cameraroll"])) {
     return {
       category: "camera",
       risk: "high",
@@ -50,7 +86,11 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("navigation")) {
+  if (
+    packageNameEquals(packageName, ["react-navigation"]) ||
+    packageHasToken(packageName, ["navigation", "navigator", "screens"]) ||
+    packageHasTokenSequence(packageName, ["gesture", "handler"])
+  ) {
     return {
       category: "navigation",
       risk: "medium",
@@ -61,7 +101,10 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("async-storage")) {
+  if (
+    packageHasToken(packageName, ["mmkv", "realm"]) ||
+    packageHasTokenSequence(packageName, ["async", "storage"])
+  ) {
     return {
       category: "storage",
       risk: "low",
@@ -72,7 +115,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("picker")) {
+  if (packageHasToken(packageName, ["picker"])) {
     return {
       category: "ui",
       risk: "low",
@@ -82,7 +125,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("clipboard")) {
+  if (packageHasToken(packageName, ["clipboard"])) {
     return {
       category: "ui",
       risk: "low",
@@ -94,9 +137,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
   }
 
   if (
-    packageName.includes("video") ||
-    packageName.includes("media") ||
-    packageName.includes("sound")
+    packageHasToken(packageName, ["video", "media", "sound", "audio"])
   ) {
     return {
       category: "media",
@@ -109,10 +150,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
   }
 
   if (
-    packageName.includes("signin") ||
-    packageName.includes("login") ||
-    packageName.includes("fbsdk") ||
-    packageName.includes("firebase")
+    packageHasToken(packageName, ["signin", "login", "fbsdk", "firebase", "kakao"])
   ) {
     return {
       category: "auth",
@@ -124,7 +162,7 @@ export function classifyPackage(packageName: string): PackageCategoryRule {
     };
   }
 
-  if (packageName.includes("permission")) {
+  if (packageHasToken(packageName, ["permission", "permissions"])) {
     return {
       category: "permissions",
       risk: "medium",

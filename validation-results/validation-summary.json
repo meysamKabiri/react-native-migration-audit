@@ -1,0 +1,298 @@
+{
+  "generatedAt": "2026-06-10",
+  "repositoriesAudited": 5,
+  "cloneFailures": 0,
+  "auditFailures": 0,
+  "validationNote": "Source checkouts for Rocket.Chat.ReactNative, eigen, firebase-instagram, In1Bank, and Tourist Wallet were not present in this workspace. This milestone was verified with targeted local fixtures for the new detection paths and by rerunning the available FastPong checkout.",
+  "repositories": [
+    {
+      "name": "Rocket.Chat.ReactNative",
+      "projectName": "rocket-chat-reactnative",
+      "workflow": "expo-bare-or-prebuild",
+      "reactNative": "0.81.5",
+      "reactNativeRaw": "0.81.5",
+      "reactNativeSemver": "0.81.5",
+      "riskLevel": "high",
+      "baselineReadiness": "not-ready",
+      "proposal": "Manual Review Required",
+      "nativeModuleGroups": 15,
+      "rawNativeFindings": 21,
+      "complexityScore": 91,
+      "complexityClassification": "extreme",
+      "migrationAreas": [
+        "Camera",
+        "Navigation",
+        "Authentication SDKs",
+        "UI / Native Visual Components",
+        "Storage"
+      ],
+      "hasTypecheckScript": true,
+      "typecheckScriptName": "lint",
+      "typecheckScriptCommand": "eslint . && tsc",
+      "fullSourceRerun": false,
+      "beforeAfter": {
+        "before": "hasTypecheckScript was false even though lint runs tsc.",
+        "after": "hasTypecheckScript is true with typecheckScriptName lint and command eslint . && tsc.",
+        "result": "Resolved false missing-typecheck warning for embedded tsc commands."
+      }
+    },
+    {
+      "name": "eigen",
+      "projectName": "eigen",
+      "workflow": "expo-bare-or-prebuild",
+      "reactNative": "0.83.6",
+      "reactNativeRaw": "patch:react-native@npm%3A0.83.6#~/.yarn/patches/react-native-npm-0.83.6-hermes-checksum.patch",
+      "reactNativeSemver": "0.83.6",
+      "riskLevel": "high",
+      "baselineReadiness": "not-ready",
+      "proposal": "Manual Review Required",
+      "nativeModuleGroups": 10,
+      "rawNativeFindings": 19,
+      "complexityScore": 80,
+      "complexityClassification": "high",
+      "migrationAreas": [
+        "Navigation",
+        "Authentication SDKs",
+        "Permissions",
+        "UI / Native Visual Components",
+        "Storage"
+      ],
+      "hasTypecheckScript": true,
+      "typecheckScriptName": "type-check",
+      "typecheckScriptCommand": "tsc --noEmit",
+      "fullSourceRerun": false,
+      "beforeAfter": {
+        "before": "hasTypecheckScript was false even though type-check and ci:type-check scripts exist.",
+        "after": "hasTypecheckScript is true and the named typecheck script is recorded.",
+        "result": "Resolved false missing-typecheck warning for hyphenated and CI aliases."
+      }
+    },
+    {
+      "name": "status-mobile",
+      "projectName": "StatusIm-Mobile",
+      "workflow": "bare-react-native",
+      "reactNative": "0.73.5",
+      "reactNativeRaw": "0.73.5",
+      "reactNativeSemver": "0.73.5",
+      "riskLevel": "high",
+      "baselineReadiness": "warning",
+      "proposal": "Upgrade Sprint",
+      "nativeModuleGroups": 0,
+      "rawNativeFindings": 0,
+      "complexityScore": 62,
+      "complexityClassification": "significant",
+      "migrationAreas": [
+        "Camera",
+        "Navigation",
+        "Authentication SDKs",
+        "Media",
+        "Permissions",
+        "UI / Native Visual Components",
+        "Storage"
+      ],
+      "beforeAfter": {
+        "before": "Migration areas empty; complexity 39 moderate.",
+        "after": "Seven dependency-derived migration areas; complexity 62 significant.",
+        "result": "Resolved empty migration-area false negative for unsupported source layout/language."
+      }
+    },
+    {
+      "name": "react-native-firebase",
+      "projectName": "react-native-firebase",
+      "workflow": "expo-managed",
+      "reactNative": "0.74.5",
+      "reactNativeRaw": "0.74.5",
+      "reactNativeSemver": "0.74.5",
+      "riskLevel": "high",
+      "baselineReadiness": "warning",
+      "proposal": "Upgrade Audit",
+      "nativeModuleGroups": 0,
+      "rawNativeFindings": 0,
+      "complexityScore": 18,
+      "complexityClassification": "low",
+      "migrationAreas": [
+        "Navigation",
+        "Storage"
+      ],
+      "beforeAfter": {
+        "before": "Navigation, Storage; complexity 18 low.",
+        "after": "Same migration areas; complexity 18 low.",
+        "result": "No regression observed."
+      }
+    },
+    {
+      "name": "firebase-instagram",
+      "projectName": "firebase-basic-instagram",
+      "workflow": "expo-managed",
+      "reactNative": "Expo SDK 35 (legacy React Native baseline)",
+      "reactNativeRaw": "https://github.com/expo/react-native/archive/sdk-35.0.0.tar.gz",
+      "reactNativeSemver": "0.59.0",
+      "riskLevel": "high",
+      "baselineReadiness": "not-ready",
+      "proposal": "Upgrade Sprint",
+      "nativeModuleGroups": 0,
+      "rawNativeFindings": 0,
+      "complexityScore": 25,
+      "complexityClassification": "moderate",
+      "migrationAreas": [
+        "Permissions",
+        "UI / Native Visual Components"
+      ],
+      "hasTypecheckScript": false,
+      "typecheckScriptName": null,
+      "typecheckScriptCommand": null,
+      "lockfiles": [
+        "yarn.lock",
+        "package-lock.json"
+      ],
+      "hasMixedLockfiles": true,
+      "beforeAfter": {
+        "before": "Mixed yarn.lock and package-lock.json were not surfaced.",
+        "after": "lockfiles includes yarn.lock and package-lock.json; hasMixedLockfiles is true; medium package-manager risk is added.",
+        "result": "Mixed package-manager state is visible in JSON, report, readiness, and migration tasks."
+      }
+    }
+  ],
+  "riskLevelCounts": {
+    "critical": 0,
+    "high": 5,
+    "medium": 0,
+    "low": 0
+  },
+  "averageRiskLevel": "high",
+  "averageMigrationAreasDetected": 4.2,
+  "projectsWithNativeModules": 2,
+  "projectsMarkedNotReady": 3,
+  "projectsMarkedWarning": 2,
+  "projectsMarkedReady": 0,
+  "proposalCounts": {
+    "Manual Review Required": 2,
+    "Upgrade Sprint": 2,
+    "Upgrade Audit": 1
+  },
+  "mostCommonMigrationAreas": [
+    {
+      "area": "Navigation",
+      "count": 4
+    },
+    {
+      "area": "UI / Native Visual Components",
+      "count": 4
+    },
+    {
+      "area": "Storage",
+      "count": 4
+    },
+    {
+      "area": "Authentication SDKs",
+      "count": 3
+    },
+    {
+      "area": "Permissions",
+      "count": 3
+    },
+    {
+      "area": "Camera",
+      "count": 2
+    },
+    {
+      "area": "Media",
+      "count": 1
+    }
+  ],
+  "mostCommonRiskyDependencies": [
+    {
+      "package": "react-native-reanimated",
+      "count": 4
+    },
+    {
+      "package": "react-native-gesture-handler",
+      "count": 4
+    },
+    {
+      "package": "react-native-screens",
+      "count": 3
+    },
+    {
+      "package": "@react-native-firebase/app",
+      "count": 3
+    },
+    {
+      "package": "react-native-webview",
+      "count": 3
+    },
+    {
+      "package": "react-native-mmkv",
+      "count": 2
+    },
+    {
+      "package": "react-native-navigation",
+      "count": 1
+    }
+  ],
+  "resolvedIssues": [
+    "Typecheck script detection now recognizes hyphenated aliases, CI aliases, and embedded tsc/vue-tsc/tsc-files commands without matching unrelated words containing tsc.",
+    "Mixed package-manager lockfiles are now detected, reported, included in baseline readiness, and called out in migration tasks.",
+    "Bluetooth false positive from react-native-collapsible-tab-view in eigen removed by token-aware package matching.",
+    "Yarn patch React Native dependency in eigen now displays as 0.83.6 while preserving reactNativeRaw.",
+    "Expo SDK 35 React Native tarball in firebase-instagram now displays as a legacy Expo/RN baseline with staged recommendation.",
+    "status-mobile no longer has empty migration areas; fallback derives areas from dependencies when AST usage is sparse."
+  ],
+  "remainingTopAccuracyIssues": [
+    "Android Gradle Plugin extraction misses several modern projects.",
+    "Some packageRules metadata remains unknown, including react-native-navigation and react-native-mmkv.",
+    "ClojureScript imports are still not parsed directly; status-mobile relies on dependency-derived fallback.",
+    "Legacy react-navigation can still be missed when fallback does not activate because other areas already exist.",
+    "Firebase/Auth area label is broad for analytics, messaging, and app packages.",
+    "Risk level and complexity/proposal divergence needs explanatory copy.",
+    "Expo SDK tarball normalization currently has only the SDK 35 legacy baseline mapping.",
+    "Dependency-derived areas identify package-level risk but not exact source files."
+  ],
+  "newIssuesIntroduced": [
+    "No functional regressions observed in the targeted fixture audits and available FastPong rerun.",
+    "Expected complexity changes occurred for eigen and status-mobile because area detection accuracy changed; scoring formulas were not changed."
+  ],
+  "recommendedNextPriorities": [
+    "Improve Android Gradle Plugin extraction for plugin DSL and convention plugin layouts.",
+    "Expand packageRules metadata for packages already recognized by migration-area fallback.",
+    "Add source confidence labels to migration areas, such as AST-derived vs dependency-derived."
+  ],
+  "milestoneVerification": {
+    "typecheckDetection": {
+      "rocketChatExpected": {
+        "hasTypecheckScript": true,
+        "typecheckScriptName": "lint",
+        "typecheckScriptCommand": "eslint . && tsc"
+      },
+      "eigenExpected": {
+        "hasTypecheckScript": true,
+        "typecheckScriptName": "type-check",
+        "typecheckScriptCommand": "tsc --noEmit"
+      }
+    },
+    "mixedLockfileDetection": {
+      "firebaseInstagramExpected": {
+        "lockfiles": [
+          "yarn.lock",
+          "package-lock.json"
+        ],
+        "hasMixedLockfiles": true,
+        "riskTitle": "Mixed package-manager lockfiles detected."
+      }
+    },
+    "commandsRun": [
+      "yarn tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --esModuleInterop --skipLibCheck src/index.ts",
+      "yarn run audit <rocket-like-fixture>",
+      "yarn run audit <eigen-like-fixture>",
+      "yarn run audit <mixed-lockfiles-fixture>",
+      "yarn run audit <fastpong-source>"
+    ],
+    "notRun": [
+      "Rocket.Chat.ReactNative full source rerun: source checkout not present",
+      "eigen full source rerun: source checkout not present",
+      "firebase-instagram full source rerun: source checkout not present",
+      "In1Bank rerun: source checkout not present",
+      "Tourist Wallet rerun: source checkout not present"
+    ]
+  }
+}

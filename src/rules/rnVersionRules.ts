@@ -20,14 +20,58 @@ export type ReactNativeUpgradePath = {
   note: string;
 };
 
+export type NormalizedReactNativeVersion = {
+  rawVersion: string | null;
+  displayVersion: string | null;
+  semverVersion: string | null;
+  isLegacyExpoBaseline: boolean;
+};
+
+const expoSdkLegacyBaselines: Record<string, string> = {
+  "35": "0.59.0",
+};
+
+export function normalizeReactNativeVersionSpec(
+  version?: string | null,
+): NormalizedReactNativeVersion {
+  if (!version) {
+    return {
+      rawVersion: null,
+      displayVersion: null,
+      semverVersion: null,
+      isLegacyExpoBaseline: false,
+    };
+  }
+
+  const expoSdkMatch = version.match(/sdk-(\d+)\.0\.0/i);
+  if (expoSdkMatch) {
+    const sdk = expoSdkMatch[1];
+    return {
+      rawVersion: version,
+      displayVersion: `Expo SDK ${sdk} (legacy React Native baseline)`,
+      semverVersion: expoSdkLegacyBaselines[sdk] ?? null,
+      isLegacyExpoBaseline: true,
+    };
+  }
+
+  const decodedVersion = decodeURIComponent(version);
+  const patchVersionMatch = decodedVersion.match(/react-native@npm:([\d.]+)/);
+  const normalizedVersion = semver.coerce(patchVersionMatch?.[1] ?? version)?.version ?? null;
+
+  return {
+    rawVersion: version,
+    displayVersion: normalizedVersion ?? version,
+    semverVersion: normalizedVersion,
+    isLegacyExpoBaseline: false,
+  };
+}
+
 export function cleanVersion(version?: string | null) {
-  if (!version) return null;
-  return version.replace(/[^\d.]/g, "");
+  return normalizeReactNativeVersionSpec(version).semverVersion;
 }
 
 function normalizeReactNativeVersion(version: string) {
-  const normalizedVersion = semver.coerce(version);
-  return normalizedVersion?.version ?? null;
+  return normalizeReactNativeVersionSpec(version).semverVersion;
 }
 
 function createUpgradePath(
@@ -54,7 +98,16 @@ export function generateReactNativeUpgradePath(
     );
   }
 
-  const version = normalizeReactNativeVersion(currentVersion);
+  const normalized = normalizeReactNativeVersionSpec(currentVersion);
+  const version = normalized.semverVersion;
+
+  if (normalized.isLegacyExpoBaseline) {
+    return createUpgradePath(
+      "staged-upgrade",
+      ["Expo SDK 35 baseline", "modern Expo SDK", "current stable"],
+      "This project uses an old Expo SDK React Native tarball. Treat it as a legacy React Native baseline and plan staged Expo/RN upgrades before implementation.",
+    );
+  }
 
   if (!version) {
     return createUpgradePath(

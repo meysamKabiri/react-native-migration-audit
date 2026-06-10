@@ -18,7 +18,10 @@ export type BaselineReadiness = {
 
 type AuditResultForBaselineReadiness = {
   reactNative: string | null;
+  reactNativeSemver?: string | null;
   packageManager: string;
+  lockfiles: string[];
+  hasMixedLockfiles: boolean;
   workflow: string;
   riskLevel: "critical" | "high" | "medium" | "low";
   hasIOS: boolean;
@@ -80,7 +83,7 @@ export function generateBaselineReadiness(
   result: AuditResultForBaselineReadiness,
 ): BaselineReadiness {
   const checks: BaselineReadinessCheck[] = [];
-  const rnMinor = getMinorVersion(result.reactNative);
+  const rnMinor = getMinorVersion(result.reactNativeSemver ?? result.reactNative);
 
   checks.push(
     createCheck(
@@ -173,9 +176,13 @@ export function generateBaselineReadiness(
   checks.push(
     createCheck(
       "Package manager",
-      result.packageManager === "unknown" ? "warning" : "pass",
-      `Detected package manager: ${result.packageManager}.`,
-      result.packageManager === "unknown"
+      result.packageManager === "unknown" || result.hasMixedLockfiles
+        ? "warning"
+        : "pass",
+      `Detected package manager: ${result.packageManager}. Lockfiles: ${result.lockfiles.length ? result.lockfiles.join(", ") : "none detected"}.`,
+      result.hasMixedLockfiles
+        ? "Multiple lockfiles were found. Confirm the intended package manager before running installs or changing dependencies."
+        : result.packageManager === "unknown"
         ? "Add or restore a supported lockfile so install commands are deterministic."
         : "Use the detected package manager for all install and script commands.",
     ),

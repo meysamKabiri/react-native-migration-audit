@@ -4,7 +4,11 @@ import fs from "fs-extra";
 import path from "node:path";
 import chalk from "chalk";
 import { riskyDependencies } from "./rules/riskyDependencies";
-import { cleanVersion, getUpgradeRecommendation } from "./rules/rnVersionRules";
+import {
+  cleanVersion,
+  getUpgradeRecommendation,
+  normalizeReactNativeVersionSpec,
+} from "./rules/rnVersionRules";
 import { packageRules } from "./rules/packageRules";
 import { scanSourceCode } from "./scanners/sourceCodeScanner";
 import { scanAst } from "./scanners/astScanner";
@@ -15,6 +19,7 @@ import {
 import { buildMigrationAreas } from "./rules/migrationAreas";
 import { generateProposal, type Proposal } from "./core/generateProposal";
 import { generateMigrationTasks } from "./core/generateMigrationTasks";
+import { generateMigrationPlan } from "./core/generateMigrationPlan";
 import {
   generateBaselineReadiness,
   type BaselineReadiness,
@@ -93,7 +98,77 @@ async function detectPackageManager(projectPath: string) {
     return "pnpm";
   if (await fs.pathExists(path.join(projectPath, "package-lock.json")))
     return "npm";
+  if (
+    (await fs.pathExists(path.join(projectPath, "bun.lockb"))) ||
+    (await fs.pathExists(path.join(projectPath, "bun.lock")))
+  ) {
+    return "bun";
+  }
   return "unknown";
+}
+
+const lockfileNames = [
+  "yarn.lock",
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "bun.lockb",
+  "bun.lock",
+];
+
+async function detectLockfiles(projectPath: string) {
+  const lockfiles: string[] = [];
+
+  for (const lockfileName of lockfileNames) {
+    if (await fs.pathExists(path.join(projectPath, lockfileName))) {
+      lockfiles.push(lockfileName);
+    }
+  }
+
+  return lockfiles;
+}
+
+const typecheckScriptNames = [
+  "typecheck",
+  "type-check",
+  "tsc",
+  "check-types",
+  "types",
+  "ci:typecheck",
+  "ci:type-check",
+];
+
+function commandContainsTypecheck(command: string) {
+  return /(?:^|[^\w-])(?:tsc|vue-tsc|tsc-files)(?=$|[^\w-])/.test(command);
+}
+
+function detectTypecheckScript(scripts: Record<string, string>) {
+  for (const scriptName of typecheckScriptNames) {
+    const command = scripts[scriptName];
+
+    if (typeof command === "string") {
+      return {
+        hasTypecheckScript: true,
+        typecheckScriptName: scriptName,
+        typecheckScriptCommand: command,
+      };
+    }
+  }
+
+  for (const [scriptName, command] of Object.entries(scripts)) {
+    if (typeof command === "string" && commandContainsTypecheck(command)) {
+      return {
+        hasTypecheckScript: true,
+        typecheckScriptName: scriptName,
+        typecheckScriptCommand: command,
+      };
+    }
+  }
+
+  return {
+    hasTypecheckScript: false,
+    typecheckScriptName: null,
+    typecheckScriptCommand: null,
+  };
 }
 
 function detectWorkflow(result: {
@@ -730,10 +805,21 @@ program
     );
     const podfilePath = path.join(absolutePath, "ios", "Podfile");
 
+    const reactNativeVersion = normalizeReactNativeVersionSpec(
+      dependencies["react-native"],
+    );
+    const scripts = packageJson.scripts ?? {};
+    const typecheckScript = detectTypecheckScript(scripts);
+    const lockfiles = await detectLockfiles(absolutePath);
+
     const result = {
       projectName: packageJson.name ?? "unknown",
-      reactNative: dependencies["react-native"] ?? null,
+      reactNative: reactNativeVersion.displayVersion,
+      reactNativeRaw: reactNativeVersion.rawVersion,
+      reactNativeSemver: reactNativeVersion.semverVersion,
       packageManager: await detectPackageManager(absolutePath),
+      lockfiles,
+      hasMixedLockfiles: lockfiles.length > 1,
       expo: dependencies["expo"] ?? null,
       react: dependencies["react"] ?? null,
       typescript: dependencies["typescript"] ?? null,
@@ -790,14 +876,14 @@ program
         requiredActions: [],
       } as BaselineReadiness,
 
-      scripts: packageJson.scripts ?? {},
+      scripts,
       hasIOSScript: Boolean(packageJson.scripts?.ios),
       hasAndroidScript: Boolean(packageJson.scripts?.android),
       hasTestScript: Boolean(packageJson.scripts?.test),
       hasLintScript: Boolean(packageJson.scripts?.lint),
-      hasTypecheckScript: Boolean(
-        packageJson.scripts?.typecheck || packageJson.scripts?.tsc,
-      ),
+      hasTypecheckScript: typecheckScript.hasTypecheckScript,
+      typecheckScriptName: typecheckScript.typecheckScriptName,
+      typecheckScriptCommand: typecheckScript.typecheckScriptCommand,
 
       effortEstimate: {
         level: "unknown",
@@ -869,7 +955,7 @@ program
       );
     }
 
-    const rnVersion = cleanVersion(result.reactNative);
+    const rnVersion = cleanVersion(result.reactNativeRaw);
 
     if (rnVersion?.startsWith("0.63")) {
       addRisk(
@@ -957,6 +1043,16 @@ program
         "medium",
         "Missing Typecheck Script",
         "No typecheck script found. TypeScript migration issues may be harder to catch automatically.",
+      );
+    }
+
+    if (result.hasMixedLockfiles) {
+      addRisk(
+        result.risks,
+        "dependency",
+        "medium",
+        "Mixed package-manager lockfiles detected.",
+        "Multiple lockfiles were found. This can make installs non-reproducible and should be resolved before migration.",
       );
     }
 
@@ -1092,6 +1188,10 @@ program
     result.astScan = scanAst(absolutePath);
     result.migrationAreas = buildMigrationAreas(
       result.astScan.packageUsages.map((usage) => usage.packageName),
+      [
+        ...Object.keys(dependencies),
+        ...result.riskyDependencies.map((dependency) => dependency.name),
+      ],
     );
 
     if (result.astScan.deprecatedImports.length > 0) {
@@ -1178,6 +1278,8 @@ ${executiveSummary}
 - iOS folder: ${result.hasIOS ? "Yes" : "No"}
 - Android folder: ${result.hasAndroid ? "Yes" : "No"}
 - Package manager: ${result.packageManager}
+- Lockfiles: ${result.lockfiles.length ? result.lockfiles.join(", ") : "None detected"}
+- Mixed lockfiles: ${result.hasMixedLockfiles ? "Yes" : "No"}
 - Workflow: ${result.workflow}
 
 ## Baseline Readiness
@@ -1328,7 +1430,7 @@ ${upgradeTasksSection}
 - Android script: ${result.hasAndroidScript ? "Yes" : "No"}
 - Test script: ${result.hasTestScript ? "Yes" : "No"}
 - Lint script: ${result.hasLintScript ? "Yes" : "No"}
-- Typecheck script: ${result.hasTypecheckScript ? "Yes" : "No"}
+- Typecheck script: ${result.hasTypecheckScript ? `Yes (\`${result.typecheckScriptName ?? "unknown"}\`)` : "No"}
 
 ## Effort Estimate
 
@@ -1349,11 +1451,15 @@ ${proposalSection}
       spaces: 2,
     });
 
+    const migrationPlanPath = path.join(outputDir, "migration-plan.md");
+    await fs.writeFile(migrationPlanPath, generateMigrationPlan(result));
+
     const migrationTasksPath = path.join(outputDir, "migration-tasks.md");
     await fs.writeFile(migrationTasksPath, generateMigrationTasks(result));
 
     console.log(chalk.blue(`\nReport generated: ${reportPath}`));
     console.log(chalk.blue(`JSON generated: ${jsonPath}`));
+    console.log(chalk.blue(`Migration plan generated: ${migrationPlanPath}`));
     console.log(chalk.blue(`Migration tasks generated: ${migrationTasksPath}`));
 
     console.log(chalk.green("\nReact Native Audit Result\n"));

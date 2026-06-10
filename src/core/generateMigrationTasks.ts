@@ -17,7 +17,11 @@ type NativeModuleGroup = {
 type AuditResultForMigrationTasks = {
   projectName: string;
   packageManager: string;
+  lockfiles: string[];
+  hasMixedLockfiles: boolean;
   reactNative: string | null;
+  reactNativeRaw?: string | null;
+  reactNativeSemver?: string | null;
   react: string | null;
   typescript: string | null;
   workflow: string;
@@ -67,6 +71,7 @@ type AuditResultForMigrationTasks = {
   hasTestScript: boolean;
   hasLintScript: boolean;
   hasTypecheckScript: boolean;
+  typecheckScriptName?: string | null;
   scripts: Record<string, string>;
 };
 
@@ -147,6 +152,7 @@ function renderCommitCheckpoint(task: MigrationTask) {
 function getPackageManagerCommand(result: AuditResultForMigrationTasks) {
   if (result.packageManager === "yarn") return "yarn install";
   if (result.packageManager === "pnpm") return "pnpm install";
+  if (result.packageManager === "bun") return "bun install";
   return "npm install";
 }
 
@@ -156,6 +162,7 @@ function getScriptCommand(
 ) {
   if (result.packageManager === "yarn") return `yarn ${scriptName}`;
   if (result.packageManager === "pnpm") return `pnpm ${scriptName}`;
+  if (result.packageManager === "bun") return `bun run ${scriptName}`;
   return `npm run ${scriptName}`;
 }
 
@@ -164,7 +171,7 @@ function getVerificationCommands(result: AuditResultForMigrationTasks) {
 
   if (result.hasTypecheckScript) {
     commands.push(
-      getScriptCommand(result, result.scripts.typecheck ? "typecheck" : "tsc"),
+      getScriptCommand(result, result.typecheckScriptName ?? "typecheck"),
     );
   }
 
@@ -333,17 +340,25 @@ export function generateMigrationTasks(result: AuditResultForMigrationTasks) {
       goal: "Review dependency state before upgrading anything.",
       context: [
         `Detected package manager: ${result.packageManager}.`,
+        `Detected lockfiles: ${result.lockfiles.length ? result.lockfiles.join(", ") : "none"}.`,
         `${result.riskyDependencies.length} risky dependency package(s) were detected.`,
       ],
       allowedChanges: ["Document dependency risks and package manager commands."],
       forbiddenChanges: ["Do not upgrade unrelated packages.", "Do not switch package managers."],
-      filesToInspect: ["package.json", "yarn.lock", "package-lock.json", "pnpm-lock.yaml"],
+      filesToInspect: ["package.json", "yarn.lock", "package-lock.json", "pnpm-lock.yaml", "bun.lockb", "bun.lock"],
       instructions: [
         "Inspect dependencies and lockfiles before editing.",
+        ...(result.hasMixedLockfiles
+          ? [
+              "Multiple lockfiles were detected. Do not run package installs until the intended package manager is confirmed.",
+            ]
+          : []),
         "Identify packages that must be checked against the target React Native version.",
         "Do not run bulk upgrade commands in this task.",
       ],
-      validationCommands: [getPackageManagerCommand(result)],
+      validationCommands: result.hasMixedLockfiles
+        ? ["Confirm intended package manager before running install commands."]
+        : [getPackageManagerCommand(result)],
       successCriteria: ["Dependency risks and package manager constraints are documented."],
       rollbackNote: "Revert lockfile changes if dependency installation changes more than expected.",
     }),

@@ -1,4 +1,8 @@
-import { isBluetoothPackage } from "./packageCategories";
+import {
+  isBluetoothPackage,
+  packageHasToken,
+  packageHasTokenSequence,
+} from "./packageCategories";
 
 export type MigrationArea = {
   area: string;
@@ -93,17 +97,66 @@ const areaRules = [
   },
 ];
 
-export function buildMigrationAreas(packageNames: string[]): MigrationArea[] {
+function matchesAreaRule(packageName: string, rule: (typeof areaRules)[number]) {
+  if (rule.area === "Bluetooth") return isBluetoothPackage(packageName);
+
+  if (rule.area === "Navigation") {
+    return (
+      packageName.toLowerCase() === "react-navigation" ||
+      packageHasToken(packageName, ["navigation", "navigator", "screens"]) ||
+      packageHasTokenSequence(packageName, ["gesture", "handler"])
+    );
+  }
+
+  if (rule.area === "Storage") {
+    return (
+      packageHasToken(packageName, ["mmkv", "realm"]) ||
+      packageHasTokenSequence(packageName, ["async", "storage"])
+    );
+  }
+
+  if (rule.area === "Permissions") {
+    return packageHasToken(packageName, ["permission", "permissions"]);
+  }
+
+  if (rule.area === "Camera") {
+    return packageHasToken(packageName, ["camera", "cameraroll"]);
+  }
+
+  if (rule.area === "Authentication SDKs") {
+    return packageHasToken(packageName, ["signin", "login", "fbsdk", "firebase", "kakao"]);
+  }
+
+  if (rule.area === "Media") {
+    return packageHasToken(packageName, ["video", "sound", "media", "audio"]);
+  }
+
+  if (rule.area === "UI / Native Visual Components") {
+    return (
+      packageHasToken(packageName, [
+        "picker",
+        "calendar",
+        "chart",
+        "icons",
+        "icomoon",
+        "webview",
+      ]) ||
+      packageHasTokenSequence(packageName, ["linear", "gradient"]) ||
+      packageHasTokenSequence(packageName, ["radial", "gradient"]) ||
+      packageHasTokenSequence(packageName, ["view", "shot"])
+    );
+  }
+
+  return rule.match.some((keyword) => packageHasToken(packageName, [keyword]));
+}
+
+function buildAreasFromPackages(packageNames: string[]): MigrationArea[] {
   const areas: MigrationArea[] = [];
 
   for (const rule of areaRules) {
-    const matchedPackages = packageNames.filter((packageName) => {
-      if (rule.area === "Bluetooth") return isBluetoothPackage(packageName);
-
-      return rule.match.some((keyword) =>
-        packageName.toLowerCase().includes(keyword),
-      );
-    });
+    const matchedPackages = packageNames.filter((packageName) =>
+      matchesAreaRule(packageName, rule),
+    );
 
     if (matchedPackages.length > 0) {
       areas.push({
@@ -120,4 +173,21 @@ export function buildMigrationAreas(packageNames: string[]): MigrationArea[] {
     const weight = { high: 3, medium: 2, low: 1 };
     return weight[b.risk] - weight[a.risk];
   });
+}
+
+export function buildMigrationAreas(
+  packageNames: string[],
+  fallbackPackageNames: string[] = [],
+): MigrationArea[] {
+  const primaryAreas = buildAreasFromPackages(packageNames);
+
+  if (!fallbackPackageNames.length || primaryAreas.length > 1) {
+    return primaryAreas;
+  }
+
+  const fallbackAreas = buildAreasFromPackages([
+    ...new Set([...packageNames, ...fallbackPackageNames]),
+  ]);
+
+  return fallbackAreas.length > primaryAreas.length ? fallbackAreas : primaryAreas;
 }
