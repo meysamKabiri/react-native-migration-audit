@@ -29,6 +29,11 @@ import {
   generateBaselineReadiness,
   type BaselineReadiness,
 } from "./core/generateBaselineReadiness";
+import {
+  detectMigrationPatterns,
+  renderMigrationPatternsMarkdown,
+  type MigrationPattern,
+} from "./knowledge/migrationPatterns";
 type RiskCategory =
   | "react-native"
   | "android"
@@ -95,6 +100,15 @@ function podfileHasActiveUseFrameworks(podfile: string | null) {
       ?.split("\n")
       .some((line) => line.replace(/#.*/, "").includes("use_frameworks!")) ?? false
   );
+}
+
+function podfileHasSetupPermissions(podfile: string | null) {
+  if (!podfile) return false;
+  const lines = podfile.split("\n");
+  return lines.some((line) => {
+    const stripped = line.replace(/#.*/, "").trim();
+    return stripped.startsWith("setup_permissions(");
+  });
 }
 
 const androidGradlePluginPresentUnknown = "present-unknown";
@@ -1051,6 +1065,7 @@ program
       expo: dependencies["expo"] ?? null,
       react: dependencies["react"] ?? null,
       typescript: dependencies["typescript"] ?? null,
+      dependencyVersions: dependencies,
 
       hasIOS: await fs.pathExists(path.join(absolutePath, "ios")),
       hasAndroid: await fs.pathExists(path.join(absolutePath, "android")),
@@ -1074,6 +1089,7 @@ program
       ),
 
       hasPodfile: await fs.pathExists(podfilePath),
+      hasSetupPermissions: false,
       hasGradleBuild: await fs.pathExists(androidBuildGradlePath),
       hasAppGradleBuild: await fs.pathExists(
         path.join(absolutePath, "android", "app", "build.gradle"),
@@ -1134,6 +1150,7 @@ program
       } as ComplexityScore,
       migrationAreas: [] as ReturnType<typeof buildMigrationAreas>,
       migrationAreaEvidence: [] as MigrationAreaEvidence[],
+      knownMigrationPatterns: [] as MigrationPattern[],
       proposal: null as Proposal | null,
     };
 
@@ -1150,6 +1167,7 @@ program
       gradle: gradleVersionMatch?.[1] ?? null,
       hasUseFrameworks: podfileHasActiveUseFrameworks(podfile),
     };
+    result.hasSetupPermissions = podfileHasSetupPermissions(podfile);
 
     if (result.expo && result.hasIOS && result.hasAndroid) {
       addRisk(
@@ -1498,6 +1516,10 @@ program
     const baselineReadinessSection = renderBaselineReadiness(
       result.baselineReadiness,
     );
+    result.knownMigrationPatterns = detectMigrationPatterns(result);
+    const knownMigrationPatternsSection = renderMigrationPatternsMarkdown(
+      result.knownMigrationPatterns,
+    );
     const report = `# React Native Upgrade Audit Report
     
 
@@ -1584,6 +1606,8 @@ ${
         .join("\n\n")
     : "No known risky dependencies detected."
 }
+
+${knownMigrationPatternsSection}
 
 ## Recommended Next Steps
 

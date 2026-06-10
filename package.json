@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "audit": "tsx src/index.ts"
+    "audit": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",

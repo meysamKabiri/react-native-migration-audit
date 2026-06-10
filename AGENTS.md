@@ -10,7 +10,8 @@
 
 - Install dependencies with `yarn install`.
 - Run an audit with `yarn run audit <path-to-rn-project>` or `yarn run dev <path-to-rn-project>`; prefer `yarn run audit` over bare `yarn audit` to avoid Yarn command ambiguity.
-- There are currently no configured `test`, `lint`, or `typecheck` scripts and no root `tsconfig.json`; do not claim those checks exist unless you add them.
+- Run typecheck with `yarn typecheck` (`tsc --noEmit` with the root `tsconfig.json`).
+- There are currently no configured `test` or `lint` scripts; do not claim those checks exist unless you add them.
 
 ## Generated Outputs
 

@@ -38,3 +38,11 @@ The tool now produces an end-to-end migration preparation workflow: audit, basel
 yarn install
 yarn run audit /path/to/react-native-project
 ```
+
+## Development Validation
+
+```bash
+yarn typecheck
+```
+
+Runs `tsc --noEmit` with the root `tsconfig.json` for compile-time validation. Suitable for CI usage and pre-commit workflows.

@@ -1,4 +1,5 @@
 import { generateReactNativeUpgradePath } from "../rules/rnVersionRules";
+import type { MigrationPattern } from "../knowledge/migrationPatterns";
 
 type BaselineReadiness = {
   status: "ready" | "warning" | "not-ready";
@@ -58,6 +59,7 @@ export type AuditResultLike = {
   riskyDependencies?: RiskyDependency[];
   migrationAreas?: MigrationArea[];
   nativeModuleGroups?: NativeModuleGroup[];
+  knownMigrationPatterns?: MigrationPattern[];
   scripts?: Record<string, string>;
 };
 
@@ -433,8 +435,24 @@ function renderDependencyFocus(result: AuditResultLike) {
   ]);
 }
 
+function renderKnownMigrationRisks(result: AuditResultLike) {
+  const patterns = result.knownMigrationPatterns ?? [];
+
+  if (!patterns.length) return "";
+
+  return `### Known Migration Risks
+
+${list(
+    patterns.map(
+      (pattern) =>
+        `${pattern.id}: ${pattern.title} - ${pattern.recommendation}`,
+    ),
+  )}`;
+}
+
 export function generateUpgradeExecutionPlan(result: AuditResultLike): string {
   const validationCommands = getValidationCommands(result);
+  const knownMigrationRisksSection = renderKnownMigrationRisks(result);
 
   return `# Upgrade Execution Plan
 
@@ -445,6 +463,8 @@ Project: ${result.projectName}
 This plan is for controlled upgrade execution only. Do not execute upgrades automatically, do not modify audited app repositories from the audit tool, and do not combine feature work with migration work.
 
 ${renderMilestoneSummary(result)}
+
+${knownMigrationRisksSection}
 
 ## Baseline Gate
 
