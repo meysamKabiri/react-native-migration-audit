@@ -92,6 +92,193 @@ function podfileHasActiveUseFrameworks(podfile: string | null) {
   );
 }
 
+const androidGradlePluginPresentUnknown = "present-unknown";
+
+function extractVersionFromMatches(
+  text: string,
+  patterns: RegExp[],
+): string | null {
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const version = match?.[1];
+
+    if (version) return version;
+  }
+
+  return null;
+}
+
+function parseVersionCatalogVersions(catalog: string) {
+  const versions = new Map<string, string>();
+  const versionMatches = catalog.matchAll(
+    /^\s*([A-Za-z0-9_.-]+)\s*=\s*["']([^"']+)["']/gm,
+  );
+
+  for (const match of versionMatches) {
+    versions.set(match[1], match[2]);
+  }
+
+  return versions;
+}
+
+function extractAndroidGradlePluginVersionFromCatalog(catalog: string) {
+  const versions = parseVersionCatalogVersions(catalog);
+  const lines = catalog.split("\n");
+
+  for (const line of lines) {
+    if (!/com\.android\.(application|library)|com\.android\.tools\.build:gradle/.test(line)) {
+      continue;
+    }
+
+    const directVersion = line.match(/version\s*=\s*["']([^"']+)["']/)?.[1];
+    if (directVersion) return directVersion;
+
+    const versionRef = line.match(/version\.ref\s*=\s*["']([^"']+)["']/)?.[1];
+    if (versionRef && versions.has(versionRef)) return versions.get(versionRef) ?? null;
+
+    const moduleVersion = line.match(
+      /com\.android\.tools\.build:gradle:([0-9][A-Za-z0-9_.-]*)/,
+    )?.[1];
+    if (moduleVersion) return moduleVersion;
+  }
+
+  return null;
+}
+
+function extractGradleVariableVersions(text: string) {
+  const versions = new Map<string, string>();
+  const variableMatches = text.matchAll(
+    /(?:def\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*["']([0-9][A-Za-z0-9_.-]*)["']/g,
+  );
+
+  for (const match of variableMatches) {
+    versions.set(match[1], match[2]);
+  }
+
+  return versions;
+}
+
+function parseGradlePropertiesVersions(properties: string) {
+  const versions = new Map<string, string>();
+  const propertyMatches = properties.matchAll(
+    /^\s*([A-Za-z0-9_.-]+)\s*=\s*([0-9][A-Za-z0-9_.-]*)\s*$/gm,
+  );
+
+  for (const match of propertyMatches) {
+    versions.set(match[1], match[2]);
+  }
+
+  return versions;
+}
+
+function getLikelyAndroidGradlePluginVersion(
+  versions: Map<string, string>,
+) {
+  const propertyNames = [
+    "androidGradlePluginVersion",
+    "agpVersion",
+    "agp_version",
+    "gradlePluginVersion",
+  ];
+
+  for (const propertyName of propertyNames) {
+    const version = versions.get(propertyName);
+    if (version) return version;
+  }
+
+  return null;
+}
+
+function extractAndroidGradlePluginVersionFromGradle(text: string) {
+  const directVersion = extractVersionFromMatches(text, [
+    /com\.android\.tools\.build:gradle:([0-9][A-Za-z0-9_.-]*)/,
+    /com\.android\.tools\.build:gradle["']\s*,\s*version\s*[:=]\s*["']([0-9][A-Za-z0-9_.-]*)["']/,
+    /id\s*\(?["']com\.android\.(?:application|library)["']\)?\s*version\s*\(?["']([0-9][A-Za-z0-9_.-]*)["']\)?/,
+    /id\s*=\s*["']com\.android\.(?:application|library)["'][\s\S]{0,160}?version\s*=\s*["']([0-9][A-Za-z0-9_.-]*)["']/,
+  ]);
+
+  if (directVersion) return directVersion;
+
+  const variables = extractGradleVariableVersions(text);
+  const variableReference = extractVersionFromMatches(text, [
+    /com\.android\.tools\.build:gradle:\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/,
+    /id\s*\(?["']com\.android\.(?:application|library)["']\)?\s*version\s+\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/,
+  ]);
+
+  if (variableReference && variables.has(variableReference)) {
+    return variables.get(variableReference) ?? null;
+  }
+
+  return null;
+}
+
+function hasAndroidGradlePluginUsage(text: string) {
+  return /com\.android\.(application|library)|com\.android\.tools\.build:gradle/.test(
+    text,
+  );
+}
+
+function formatAndroidGradlePluginVersion(version: string | null) {
+  if (version === androidGradlePluginPresentUnknown) {
+    return "Present (version could not be determined)";
+  }
+
+  return version ?? "Not detected";
+}
+
+async function detectAndroidGradlePlugin(projectPath: string) {
+  const propertiesVersions = new Map<string, string>();
+  const propertyFilesToCheck = [
+    "android/gradle.properties",
+    "gradle.properties",
+  ];
+  const filesToCheck = [
+    "android/build.gradle",
+    "android/build.gradle.kts",
+    "android/app/build.gradle",
+    "android/app/build.gradle.kts",
+    "android/settings.gradle",
+    "android/settings.gradle.kts",
+    "android/gradle/libs.versions.toml",
+    "gradle/libs.versions.toml",
+    "settings.gradle",
+    "settings.gradle.kts",
+    "build.gradle",
+    "build.gradle.kts",
+  ];
+  let hasPluginUsage = false;
+
+  for (const relativePath of propertyFilesToCheck) {
+    const contents = await readFileIfExists(path.join(projectPath, relativePath));
+    if (!contents) continue;
+
+    for (const [name, version] of parseGradlePropertiesVersions(contents)) {
+      propertiesVersions.set(name, version);
+    }
+  }
+
+  for (const relativePath of filesToCheck) {
+    const contents = await readFileIfExists(path.join(projectPath, relativePath));
+    if (!contents) continue;
+
+    const version = relativePath.endsWith(".toml")
+      ? extractAndroidGradlePluginVersionFromCatalog(contents)
+      : extractAndroidGradlePluginVersionFromGradle(contents);
+
+    if (version) return version;
+    if (hasAndroidGradlePluginUsage(contents)) {
+      hasPluginUsage = true;
+
+      const propertyVersion = getLikelyAndroidGradlePluginVersion(
+        propertiesVersions,
+      );
+      if (propertyVersion) return propertyVersion;
+    }
+  }
+
+  return hasPluginUsage ? androidGradlePluginPresentUnknown : null;
+}
+
 async function detectPackageManager(projectPath: string) {
   if (await fs.pathExists(path.join(projectPath, "yarn.lock"))) return "yarn";
   if (await fs.pathExists(path.join(projectPath, "pnpm-lock.yaml")))
@@ -914,13 +1101,10 @@ program
     const gradleWrapper = await readFileIfExists(androidGradleWrapperPath);
     const podfile = await readFileIfExists(podfilePath);
 
-    const androidGradlePluginMatch = androidBuildGradle?.match(
-      /com\.android\.tools\.build:gradle:([\d.]+)/,
-    );
     const gradleVersionMatch = gradleWrapper?.match(/gradle-([\d.]+)-/);
 
     result.nativeVersions = {
-      androidGradlePlugin: androidGradlePluginMatch?.[1] ?? null,
+      androidGradlePlugin: await detectAndroidGradlePlugin(absolutePath),
       gradle: gradleVersionMatch?.[1] ?? null,
       hasUseFrameworks: podfileHasActiveUseFrameworks(podfile),
     };
@@ -1420,7 +1604,7 @@ ${nativeModuleSection}
 ${upgradeTasksSection}
 ## Native Build Tooling
 
-- Android Gradle Plugin: ${result.nativeVersions.androidGradlePlugin ?? "Not detected"}
+- Android Gradle Plugin: ${formatAndroidGradlePluginVersion(result.nativeVersions.androidGradlePlugin)}
 - Gradle: ${result.nativeVersions.gradle ?? "Not detected"}
 - Podfile use_frameworks!: ${result.nativeVersions.hasUseFrameworks ? "Yes" : "No"}
 

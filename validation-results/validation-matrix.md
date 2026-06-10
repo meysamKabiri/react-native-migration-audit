@@ -1,14 +1,14 @@
 # Real-World Validation Matrix
 
-Updated for the validation-command and package-manager accuracy milestone. The source checkouts for Rocket.Chat.ReactNative, eigen, firebase-instagram, In1Bank, and Tourist Wallet were not present in this workspace, so full reruns were not possible here; targeted local fixtures verified the new detection paths, and the available FastPong checkout was rerun successfully.
+Updated for the Android Gradle Plugin extraction accuracy milestone. Rocket.Chat.ReactNative, eigen, and status-mobile were rerun from local `validation-repos/` source checkouts.
 
 ## Summary Matrix
 
 | Repository | Workflow | RN Version | Risk | Baseline | Proposal | Native Modules | Complexity | Migration Areas | Notes |
 |---|---|---:|---|---|---|---:|---|---|---|
-| Rocket.Chat.ReactNative | expo-bare-or-prebuild | 0.81.5 | high | not-ready | Manual Review Required | 15 groups / 21 raw | 91 extreme | Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage | Typecheck detection now recognizes embedded `tsc` commands such as `lint: eslint . && tsc`. |
-| eigen | expo-bare-or-prebuild | 0.83.6 | high | not-ready | Manual Review Required | 10 groups / 19 raw | 80 high | Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage | Typecheck detection now recognizes `type-check` and `ci:type-check` script names. |
-| status-mobile | bare-react-native | 0.73.5 | high | warning | Upgrade Sprint | 0 groups / 0 raw | 62 significant | Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage | Dependency-derived fallback resolved the empty migration-area false negative. Areas now reflect camera, navigation, Firebase, permissions, UI/media, and storage dependencies. |
+| Rocket.Chat.ReactNative | expo-bare-or-prebuild | 0.81.5 | high | not-ready | Manual Review Required | 15 groups / 21 raw | 88 extreme | Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage | AGP plugin usage now reports `present-unknown` instead of `null`; version is not declared in checked Gradle files. |
+| eigen | expo-bare-or-prebuild | 0.83.6 | high | not-ready | Manual Review Required | 10 groups / 19 raw | 77 high | Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage | AGP plugin usage now reports `present-unknown` instead of `null`; version is not declared in checked Gradle files. |
+| status-mobile | bare-react-native | 0.73.5 | high | warning | Upgrade Sprint | 0 groups / 0 raw | 62 significant | Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage | AGP version now resolves to `7.4.2` from `android/gradle.properties`. |
 | react-native-firebase | expo-managed | 0.74.5 | high | warning | Upgrade Audit | 0 groups / 0 raw | 18 low | Navigation, Storage | Unchanged. Managed Expo classification still looks correct. Risk/proposal explanation remains a future improvement. |
 | firebase-instagram | expo-managed | Expo SDK 35 (legacy React Native baseline) | high | not-ready | Upgrade Sprint | 0 groups / 0 raw | 25 moderate | Permissions, UI / Native Visual Components | Mixed `yarn.lock` and `package-lock.json` are now reported as package-manager risk. |
 
@@ -16,6 +16,9 @@ Updated for the validation-command and package-manager accuracy milestone. The s
 
 | Repository | Before | After | Result |
 |---|---|---|---|
+| Rocket.Chat.ReactNative | `androidGradlePlugin: null` despite `com.android.tools.build:gradle` and `com.android.application` usage. | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. | Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files. |
+| eigen | `androidGradlePlugin: null` despite `com.android.tools.build:gradle` and `com.android.application` usage. | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. | Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files. |
+| status-mobile | `androidGradlePlugin: null` even though `gradlePluginVersion=7.4.2` exists in `android/gradle.properties`. | `androidGradlePlugin: "7.4.2"`; report shows `Android Gradle Plugin: 7.4.2`. | Resolved AGP version extraction through Gradle properties. |
 | Rocket.Chat.ReactNative | `hasTypecheckScript: false` even though `lint` runs `tsc`. | `hasTypecheckScript: true`, `typecheckScriptName: "lint"`, `typecheckScriptCommand: "eslint . && tsc"`. | Resolved false missing-typecheck warning for embedded `tsc` commands. |
 | eigen | `hasTypecheckScript: false` even though `type-check` and `ci:type-check` scripts exist. | `hasTypecheckScript: true`; the named typecheck script is recorded. | Resolved false missing-typecheck warning for hyphenated and CI aliases. |
 | firebase-instagram | Mixed `yarn.lock` and `package-lock.json` were not surfaced. | `lockfiles: ["yarn.lock", "package-lock.json"]`, `hasMixedLockfiles: true`, medium package-manager risk added. | Mixed package-manager state is now visible in JSON, report, readiness, and migration tasks. |
@@ -42,10 +45,11 @@ Actual findings after fixes:
 - Migration areas: Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage.
 
 Resolved issues:
+- Android Gradle Plugin usage now reports `present-unknown` instead of `null` when the plugin is present but the version is not declared in scanned files.
 - Typecheck script detection now recognizes embedded `tsc` commands such as Rocket.Chat's `lint` script.
 
 Remaining issues:
-- Android Gradle Plugin is still `null`; Gradle plugin extraction remains a future improvement.
+- AGP version remains unknown because Rocket.Chat declares `classpath("com.android.tools.build:gradle")` without a local version declaration.
 
 New issues introduced:
 - None observed.
@@ -67,13 +71,14 @@ Actual findings after fixes:
 - Migration areas: Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage.
 
 Resolved issues:
+- Android Gradle Plugin usage now reports `present-unknown` instead of `null` when the plugin is present but the version is not declared in scanned files.
 - Typecheck script aliases `type-check` and `ci:type-check` are now recognized.
 - Bluetooth false positive removed.
 - RN version display normalized from Yarn patch protocol to `0.83.6`.
 - Upgrade recommendation and readiness now use the normalized RN version.
 
 Remaining issues:
-- Android Gradle Plugin remains `null`.
+- AGP version remains unknown because eigen declares `classpath("com.android.tools.build:gradle")` without a local version declaration.
 
 New issues introduced:
 - Complexity moved from 93 extreme to 80 high because a false high-risk Bluetooth area was removed. This is expected, not a regression.
@@ -92,6 +97,7 @@ Actual findings after fixes:
 - Migration areas: Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage.
 
 Resolved issues:
+- Android Gradle Plugin now resolves to `7.4.2` from `android/gradle.properties`.
 - Empty migration-area false negative resolved by dependency-derived fallback.
 - `react-native-navigation`, `react-native-mmkv`, `react-native-camera-kit`, `react-native-permissions`, camera roll, and Firebase dependencies now contribute to migration areas.
 
@@ -157,7 +163,7 @@ New issues introduced:
 
 | # | Issue | Evidence | Impact |
 |---:|---|---|---|
-| 1 | Android Gradle Plugin extraction misses modern layouts | Rocket.Chat/eigen/status show `androidGradlePlugin: null` | Build tooling age checks may underreport risk. |
+| 1 | AGP version can remain unresolved when the project omits a local version declaration | Rocket.Chat/eigen use `classpath("com.android.tools.build:gradle")` without a version in scanned files | The audit can confirm plugin presence but not the exact AGP version. |
 | 2 | Package-rule metadata remains incomplete | status-mobile risky deps `react-native-navigation`, `react-native-mmkv` still have category `unknown` | Upgrade tasks are less specific than migration areas. |
 | 3 | ClojureScript imports still not parsed | status-mobile `.cljs` imports require fallback | Source usage counts remain incomplete. |
 | 4 | Legacy `react-navigation` 2.x still underdetected in sparse-but-not-empty projects | firebase-instagram has `react-navigation` 2.6.0 | Navigation area can still be missed when other areas already exist. |
@@ -170,7 +176,7 @@ New issues introduced:
 
 | # | Opportunity | Priority |
 |---:|---|---|
-| 1 | Improve Gradle/AGP version extraction for plugin DSL and convention plugins | high |
+| 1 | Resolve AGP versions supplied only by external Gradle convention plugins or remote React Native plugin metadata | high |
 | 2 | Expand `packageRules` metadata for React Native Navigation, MMKV, camera roll, and related packages | medium |
 | 3 | Add ClojureScript import support in a future scanner milestone | medium |
 | 4 | Revisit fallback threshold or merge dependency-derived areas more broadly without overreporting | medium |
@@ -180,6 +186,14 @@ New issues introduced:
 | 8 | Add confidence/source labels to migration areas: AST-derived vs dependency-derived | medium |
 
 ## This Milestone Verification
+
+| Case | Command | Result |
+|---|---|---|
+| Rocket.Chat.ReactNative AGP | `yarn run audit validation-repos/Rocket.Chat.ReactNative --out validation-results/Rocket.Chat.ReactNative` | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. |
+| eigen AGP | `yarn run audit validation-repos/eigen --out validation-results/eigen` | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. |
+| status-mobile AGP | `yarn run audit validation-repos/status-mobile --out validation-results/status-mobile` | `androidGradlePlugin: "7.4.2"`; report shows `Android Gradle Plugin: 7.4.2`. |
+
+## Previous Milestone Verification
 
 | Case | Command | Result |
 |---|---|---|

@@ -3,7 +3,7 @@
   "repositoriesAudited": 5,
   "cloneFailures": 0,
   "auditFailures": 0,
-  "validationNote": "Source checkouts for Rocket.Chat.ReactNative, eigen, firebase-instagram, In1Bank, and Tourist Wallet were not present in this workspace. This milestone was verified with targeted local fixtures for the new detection paths and by rerunning the available FastPong checkout.",
+  "validationNote": "Android Gradle Plugin extraction milestone verified by rerunning Rocket.Chat.ReactNative, eigen, and status-mobile from local validation-repos source checkouts.",
   "repositories": [
     {
       "name": "Rocket.Chat.ReactNative",
@@ -17,7 +17,7 @@
       "proposal": "Manual Review Required",
       "nativeModuleGroups": 15,
       "rawNativeFindings": 21,
-      "complexityScore": 91,
+      "complexityScore": 88,
       "complexityClassification": "extreme",
       "migrationAreas": [
         "Camera",
@@ -29,11 +29,14 @@
       "hasTypecheckScript": true,
       "typecheckScriptName": "lint",
       "typecheckScriptCommand": "eslint . && tsc",
-      "fullSourceRerun": false,
+      "androidGradlePluginBefore": null,
+      "androidGradlePlugin": "present-unknown",
+      "androidGradlePluginReport": "Present (version could not be determined)",
+      "fullSourceRerun": true,
       "beforeAfter": {
-        "before": "hasTypecheckScript was false even though lint runs tsc.",
-        "after": "hasTypecheckScript is true with typecheckScriptName lint and command eslint . && tsc.",
-        "result": "Resolved false missing-typecheck warning for embedded tsc commands."
+        "before": "androidGradlePlugin was null despite com.android.tools.build:gradle and com.android.application usage.",
+        "after": "androidGradlePlugin is present-unknown and the report shows Present (version could not be determined).",
+        "result": "Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files."
       }
     },
     {
@@ -48,7 +51,7 @@
       "proposal": "Manual Review Required",
       "nativeModuleGroups": 10,
       "rawNativeFindings": 19,
-      "complexityScore": 80,
+      "complexityScore": 77,
       "complexityClassification": "high",
       "migrationAreas": [
         "Navigation",
@@ -60,11 +63,14 @@
       "hasTypecheckScript": true,
       "typecheckScriptName": "type-check",
       "typecheckScriptCommand": "tsc --noEmit",
-      "fullSourceRerun": false,
+      "androidGradlePluginBefore": null,
+      "androidGradlePlugin": "present-unknown",
+      "androidGradlePluginReport": "Present (version could not be determined)",
+      "fullSourceRerun": true,
       "beforeAfter": {
-        "before": "hasTypecheckScript was false even though type-check and ci:type-check scripts exist.",
-        "after": "hasTypecheckScript is true and the named typecheck script is recorded.",
-        "result": "Resolved false missing-typecheck warning for hyphenated and CI aliases."
+        "before": "androidGradlePlugin was null despite com.android.tools.build:gradle and com.android.application usage.",
+        "after": "androidGradlePlugin is present-unknown and the report shows Present (version could not be determined).",
+        "result": "Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files."
       }
     },
     {
@@ -90,10 +96,14 @@
         "UI / Native Visual Components",
         "Storage"
       ],
+      "androidGradlePluginBefore": null,
+      "androidGradlePlugin": "7.4.2",
+      "androidGradlePluginReport": "7.4.2",
+      "fullSourceRerun": true,
       "beforeAfter": {
-        "before": "Migration areas empty; complexity 39 moderate.",
-        "after": "Seven dependency-derived migration areas; complexity 62 significant.",
-        "result": "Resolved empty migration-area false negative for unsupported source layout/language."
+        "before": "androidGradlePlugin was null even though android/gradle.properties declares gradlePluginVersion=7.4.2.",
+        "after": "androidGradlePlugin is 7.4.2 and the report shows Android Gradle Plugin: 7.4.2.",
+        "result": "Resolved AGP version extraction through Gradle properties."
       }
     },
     {
@@ -231,6 +241,8 @@
     }
   ],
   "resolvedIssues": [
+    "Android Gradle Plugin usage now reports present-unknown instead of null when plugin usage is detected but no version is locally declared.",
+    "Android Gradle Plugin versions can now resolve from Gradle properties such as gradlePluginVersion=7.4.2.",
     "Typecheck script detection now recognizes hyphenated aliases, CI aliases, and embedded tsc/vue-tsc/tsc-files commands without matching unrelated words containing tsc.",
     "Mixed package-manager lockfiles are now detected, reported, included in baseline readiness, and called out in migration tasks.",
     "Bluetooth false positive from react-native-collapsible-tab-view in eigen removed by token-aware package matching.",
@@ -239,7 +251,7 @@
     "status-mobile no longer has empty migration areas; fallback derives areas from dependencies when AST usage is sparse."
   ],
   "remainingTopAccuracyIssues": [
-    "Android Gradle Plugin extraction misses several modern projects.",
+    "Android Gradle Plugin version remains unresolved when projects declare com.android.tools.build:gradle without a local version and rely on external Gradle/plugin metadata.",
     "Some packageRules metadata remains unknown, including react-native-navigation and react-native-mmkv.",
     "ClojureScript imports are still not parsed directly; status-mobile relies on dependency-derived fallback.",
     "Legacy react-navigation can still be missed when fallback does not activate because other areas already exist.",
@@ -249,15 +261,32 @@
     "Dependency-derived areas identify package-level risk but not exact source files."
   ],
   "newIssuesIntroduced": [
-    "No functional regressions observed in the targeted fixture audits and available FastPong rerun.",
+    "No functional regressions observed in the AGP validation reruns for Rocket.Chat.ReactNative, eigen, and status-mobile.",
     "Expected complexity changes occurred for eigen and status-mobile because area detection accuracy changed; scoring formulas were not changed."
   ],
   "recommendedNextPriorities": [
-    "Improve Android Gradle Plugin extraction for plugin DSL and convention plugin layouts.",
+    "Resolve AGP versions supplied only by external Gradle convention plugins or remote React Native plugin metadata.",
     "Expand packageRules metadata for packages already recognized by migration-area fallback.",
     "Add source confidence labels to migration areas, such as AST-derived vs dependency-derived."
   ],
   "milestoneVerification": {
+    "androidGradlePluginDetection": {
+      "rocketChatReactNative": {
+        "before": null,
+        "after": "present-unknown",
+        "report": "Present (version could not be determined)"
+      },
+      "eigen": {
+        "before": null,
+        "after": "present-unknown",
+        "report": "Present (version could not be determined)"
+      },
+      "statusMobile": {
+        "before": null,
+        "after": "7.4.2",
+        "report": "7.4.2"
+      }
+    },
     "typecheckDetection": {
       "rocketChatExpected": {
         "hasTypecheckScript": true,
@@ -285,11 +314,12 @@
       "yarn run audit <rocket-like-fixture>",
       "yarn run audit <eigen-like-fixture>",
       "yarn run audit <mixed-lockfiles-fixture>",
-      "yarn run audit <fastpong-source>"
+      "yarn run audit <fastpong-source>",
+      "yarn run audit validation-repos/Rocket.Chat.ReactNative --out validation-results/Rocket.Chat.ReactNative",
+      "yarn run audit validation-repos/eigen --out validation-results/eigen",
+      "yarn run audit validation-repos/status-mobile --out validation-results/status-mobile"
     ],
     "notRun": [
-      "Rocket.Chat.ReactNative full source rerun: source checkout not present",
-      "eigen full source rerun: source checkout not present",
       "firebase-instagram full source rerun: source checkout not present",
       "In1Bank rerun: source checkout not present",
       "Tourist Wallet rerun: source checkout not present"
