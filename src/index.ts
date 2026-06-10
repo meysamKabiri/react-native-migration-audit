@@ -24,6 +24,7 @@ import {
 import { generateProposal, type Proposal } from "./core/generateProposal";
 import { generateMigrationTasks } from "./core/generateMigrationTasks";
 import { generateMigrationPlan } from "./core/generateMigrationPlan";
+import { generateUpgradeExecutionPlan } from "./core/generateUpgradeExecutionPlan";
 import {
   generateBaselineReadiness,
   type BaselineReadiness,
@@ -1694,10 +1695,19 @@ ${proposalSection}
     const migrationTasksPath = path.join(outputDir, "migration-tasks.md");
     await fs.writeFile(migrationTasksPath, generateMigrationTasks(result));
 
+    const upgradeExecutionPlanPath = path.join(outputDir, "upgrade-execution-plan.md");
+    await fs.writeFile(
+      upgradeExecutionPlanPath,
+      generateUpgradeExecutionPlan(result),
+    );
+
     console.log(chalk.blue(`\nReport generated: ${reportPath}`));
     console.log(chalk.blue(`JSON generated: ${jsonPath}`));
     console.log(chalk.blue(`Migration plan generated: ${migrationPlanPath}`));
     console.log(chalk.blue(`Migration tasks generated: ${migrationTasksPath}`));
+    console.log(
+      chalk.blue(`Upgrade execution plan generated: ${upgradeExecutionPlanPath}`),
+    );
 
     console.log(chalk.green("\nReact Native Audit Result\n"));
     console.log(JSON.stringify(result, null, 2));

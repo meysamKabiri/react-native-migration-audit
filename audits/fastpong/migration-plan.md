@@ -10,6 +10,8 @@ Start with baseline stabilization. Do not perform React Native version changes u
 - Current React Native: 0.63.4
 - Overall risk level: CRITICAL
 - Package manager: yarn
+- Lockfiles: yarn.lock
+- Mixed lockfiles: No
 - Native platform phase required: Yes
 
 ## Baseline Readiness
@@ -54,7 +56,7 @@ Focus:
 
 Available validation script signals:
 
-- Typecheck script: present
+- Typecheck script: present (tsc)
 - Lint script: present
 - Test script: present
 - Android script: present
@@ -116,7 +118,7 @@ Migration-sensitive areas from the audit:
 - Authentication SDKs (medium): @react-native-google-signin/google-signin, @react-native-seoul/kakao-login, react-native-fbsdk-next. Verify native SDK setup, URL schemes, app credentials, Android/iOS configuration, and login callbacks.
 - Media (medium): react-native-media-controls, react-native-sound, react-native-video. Test video/audio playback, permissions, background behavior, and native configuration after upgrade.
 - Permissions (medium): react-native-permissions. Verify AndroidManifest, Info.plist, permission prompts, and runtime behavior after upgrade.
-- UI / Native Visual Components (medium): @react-native-picker/picker, react-native-calendars, react-native-chart-kit, react-native-icomoon, react-native-linear-gradient, react-native-radial-gradient, react-native-vector-icons, react-native-view-shot, react-native-wheel-picker-android. Run visual smoke tests on screens using native UI components after each upgrade stage.
+- UI / Native Visual Components (medium): @react-native-picker/picker, react-native-chart-kit, react-native-icomoon, react-native-linear-gradient, react-native-radial-gradient, react-native-vector-icons, react-native-view-shot, react-native-wheel-picker-android. Run visual smoke tests on screens using native UI components after each upgrade stage.
 - Storage (low): @react-native-async-storage/async-storage. Verify stored data migration, persistence behavior, and native package compatibility.
 
 ### Phase 5 — Final Verification & Release Readiness

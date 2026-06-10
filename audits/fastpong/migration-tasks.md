@@ -151,6 +151,7 @@ git commit -m "Create migration branch for RN upgrade"
 ### Context from audit
 
 - Detected package manager: yarn.
+- Detected lockfiles: yarn.lock.
 - 4 risky dependency package(s) were detected.
 
 ### Allowed changes
@@ -175,6 +176,8 @@ git commit -m "Create migration branch for RN upgrade"
 - yarn.lock
 - package-lock.json
 - pnpm-lock.yaml
+- bun.lockb
+- bun.lock
 
 ### Implementation instructions
 
@@ -923,7 +926,7 @@ git commit -m "Permissions Verification for RN migration"
 ### Context from audit
 
 - UI / Native Visual Components was detected as a MEDIUM risk migration area.
-- Detected packages: @react-native-picker/picker, react-native-calendars, react-native-chart-kit, react-native-icomoon, react-native-linear-gradient, react-native-radial-gradient, react-native-vector-icons, react-native-view-shot, react-native-wheel-picker-android.
+- Detected packages: @react-native-picker/picker, react-native-chart-kit, react-native-icomoon, react-native-linear-gradient, react-native-radial-gradient, react-native-vector-icons, react-native-view-shot, react-native-wheel-picker-android.
 
 ### Allowed changes
 
