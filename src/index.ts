@@ -102,13 +102,43 @@ function podfileHasActiveUseFrameworks(podfile: string | null) {
   );
 }
 
-function podfileHasSetupPermissions(podfile: string | null) {
-  if (!podfile) return false;
-  const lines = podfile.split("\n");
-  return lines.some((line) => {
-    const stripped = line.replace(/#.*/, "").trim();
-    return stripped.startsWith("setup_permissions(");
-  });
+function getSetupPermissionsInfo(podfile: string | null) {
+  if (!podfile) {
+    return {
+      hasSetupPermissions: false,
+      handlers: [] as string[],
+      handlersIdentified: false,
+      isEmpty: false,
+    };
+  }
+
+  const uncommented = podfile
+    .split("\n")
+    .map((line) => line.replace(/#.*/, ""))
+    .join("\n");
+  const match = uncommented.match(/setup_permissions\s*\(([\s\S]*?)\)/m);
+
+  if (!match) {
+    return {
+      hasSetupPermissions: false,
+      handlers: [] as string[],
+      handlersIdentified: false,
+      isEmpty: false,
+    };
+  }
+
+  const argument = match[1].trim();
+  const handlers = Array.from(argument.matchAll(/["']([^"']+)["']/g)).map(
+    (handlerMatch) => handlerMatch[1],
+  );
+  const isEmpty = /^\[\s*\]$/.test(argument) || argument.length === 0;
+
+  return {
+    hasSetupPermissions: true,
+    handlers,
+    handlersIdentified: handlers.length > 0,
+    isEmpty,
+  };
 }
 
 const androidGradlePluginPresentUnknown = "present-unknown";
@@ -1090,6 +1120,9 @@ program
 
       hasPodfile: await fs.pathExists(podfilePath),
       hasSetupPermissions: false,
+      setupPermissionsHandlers: [] as string[],
+      setupPermissionsHandlersIdentified: false,
+      setupPermissionsIsEmpty: false,
       hasGradleBuild: await fs.pathExists(androidBuildGradlePath),
       hasAppGradleBuild: await fs.pathExists(
         path.join(absolutePath, "android", "app", "build.gradle"),
@@ -1159,6 +1192,7 @@ program
     const androidBuildGradle = await readFileIfExists(androidBuildGradlePath);
     const gradleWrapper = await readFileIfExists(androidGradleWrapperPath);
     const podfile = await readFileIfExists(podfilePath);
+    const setupPermissionsInfo = getSetupPermissionsInfo(podfile);
 
     const gradleVersionMatch = gradleWrapper?.match(/gradle-([\d.]+)-/);
 
@@ -1167,7 +1201,11 @@ program
       gradle: gradleVersionMatch?.[1] ?? null,
       hasUseFrameworks: podfileHasActiveUseFrameworks(podfile),
     };
-    result.hasSetupPermissions = podfileHasSetupPermissions(podfile);
+    result.hasSetupPermissions = setupPermissionsInfo.hasSetupPermissions;
+    result.setupPermissionsHandlers = setupPermissionsInfo.handlers;
+    result.setupPermissionsHandlersIdentified =
+      setupPermissionsInfo.handlersIdentified;
+    result.setupPermissionsIsEmpty = setupPermissionsInfo.isEmpty;
 
     if (result.expo && result.hasIOS && result.hasAndroid) {
       addRisk(

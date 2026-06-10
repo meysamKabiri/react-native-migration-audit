@@ -5,6 +5,8 @@ export type MigrationPattern = {
   affectedVersions?: string[];
   detectionCriteria: string[];
   recommendation: string;
+  confidence?: "low" | "medium" | "high";
+  detectedSignals?: string[];
 };
 
 type RiskyDependencyLike = {
@@ -20,6 +22,11 @@ type AstPackageUsageLike = {
   packageName: string;
 };
 
+type MigrationAreaLike = {
+  area: string;
+  packages?: string[];
+};
+
 type MigrationPatternAuditFacts = {
   reactNative?: string | null;
   reactNativeSemver?: string | null;
@@ -30,6 +37,9 @@ type MigrationPatternAuditFacts = {
   hasAndroid?: boolean;
   hasPodfile?: boolean;
   hasSetupPermissions?: boolean;
+  setupPermissionsHandlers?: string[];
+  setupPermissionsHandlersIdentified?: boolean;
+  setupPermissionsIsEmpty?: boolean;
   typescript?: string | null;
   scripts?: Record<string, string>;
   dependencyVersions?: Record<string, string>;
@@ -38,6 +48,7 @@ type MigrationPatternAuditFacts = {
   astScan?: {
     packageUsages?: AstPackageUsageLike[];
   };
+  migrationAreas?: MigrationAreaLike[];
 };
 
 export const migrationPatterns: MigrationPattern[] = [
@@ -127,15 +138,15 @@ export const migrationPatterns: MigrationPattern[] = [
     id: "PATTERN-008",
     title: "react-native-permissions iOS Handler Configuration Missing",
     description:
-      "Application builds successfully but crashes at runtime because react-native-permissions permission handlers were not configured in Podfile.",
+      "Application may build successfully but fail at runtime because react-native-permissions permission handlers are not installed, configured, or regenerated correctly.",
     detectionCriteria: [
-      "react-native-permissions dependency is installed.",
+      "react-native-permissions dependency or source usage is detected.",
       "iOS project is present.",
-      "Podfile does not contain setup_permissions(...) or the handler list is incomplete.",
+      "Podfile is missing, setup_permissions(...) is missing, setup_permissions(...) appears empty, or permission handlers cannot be identified.",
       "Known symptoms include 'No permission handler detected' and RNPermissionsModule constantsToExport crash.",
     ],
     recommendation:
-      "Verify Podfile contains setup_permissions(...) and includes handlers required by the application. Run pod install after changes.",
+      "Verify Podfile contains setup_permissions(...) with all handlers required by the application. Run pod install after changes, clear DerivedData when permission-handler configuration changes, and reinstall the app after permission-handler changes.",
   },
   {
     id: "PATTERN-007",
@@ -195,6 +206,72 @@ function hasPackageUsage(result: MigrationPatternAuditFacts, packageName: string
   return (
     result.astScan?.packageUsages?.some((usage) => usage.packageName === packageName) ?? false
   );
+}
+
+function hasMigrationArea(result: MigrationPatternAuditFacts, areaName: string) {
+  return (
+    result.migrationAreas?.some(
+      (area) => area.area.toLowerCase() === areaName.toLowerCase(),
+    ) ?? false
+  );
+}
+
+function hasReactNativePermissionsEvidence(result: MigrationPatternAuditFacts) {
+  return (
+    hasDependency(result, "react-native-permissions") ||
+    hasPackageUsage(result, "react-native-permissions") ||
+    result.migrationAreas?.some((area) =>
+      area.packages?.includes("react-native-permissions"),
+    ) ||
+    false
+  );
+}
+
+function hasPermissionsHandlerConfigurationIssue(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    !result.hasPodfile ||
+      !result.hasSetupPermissions ||
+      result.setupPermissionsIsEmpty ||
+      result.setupPermissionsHandlersIdentified === false,
+  );
+}
+
+function buildPermissionsPatternSignals(result: MigrationPatternAuditFacts) {
+  const signals: string[] = [];
+
+  if (hasDependency(result, "react-native-permissions")) {
+    signals.push("react-native-permissions dependency is installed.");
+  } else if (hasPackageUsage(result, "react-native-permissions")) {
+    signals.push("react-native-permissions source usage is detected.");
+  }
+
+  if (!result.hasPodfile) {
+    signals.push(
+      "iOS project does not have a Podfile available for permission handler setup.",
+    );
+  } else if (!result.hasSetupPermissions) {
+    signals.push("Podfile lacks setup_permissions(...).");
+  } else if (result.setupPermissionsIsEmpty) {
+    signals.push("setup_permissions(...) appears empty.");
+  } else if (result.setupPermissionsHandlersIdentified === false) {
+    signals.push(
+      "Permission handlers cannot be identified from setup_permissions(...).",
+    );
+  } else if (result.setupPermissionsHandlers?.length) {
+    signals.push(
+      `setup_permissions(...) handlers detected: ${result.setupPermissionsHandlers.join(", ")}.`,
+    );
+  }
+
+  if (hasMigrationArea(result, "Permissions")) {
+    signals.push("Permissions migration area is detected.");
+  }
+
+  return signals;
+}
+
+function getPermissionsPatternConfidence(result: MigrationPatternAuditFacts) {
+  return hasPermissionsHandlerConfigurationIssue(result) ? "high" : "low";
 }
 
 function hasNavigationEvidence(result: MigrationPatternAuditFacts) {
@@ -284,10 +361,9 @@ export function detectMigrationPatterns(
 
     if (pattern.id === "PATTERN-008") {
       return Boolean(
-        hasDependency(result, "react-native-permissions") &&
+        hasReactNativePermissionsEvidence(result) &&
           result.hasIOS &&
-          result.hasPodfile &&
-          !result.hasSetupPermissions,
+          hasPermissionsHandlerConfigurationIssue(result),
       );
     }
 
@@ -304,6 +380,14 @@ export function detectMigrationPatterns(
     }
 
     return false;
+  }).map((pattern) => {
+    if (pattern.id !== "PATTERN-008") return pattern;
+
+    return {
+      ...pattern,
+      confidence: getPermissionsPatternConfidence(result),
+      detectedSignals: buildPermissionsPatternSignals(result),
+    };
   });
 }
 
@@ -314,12 +398,12 @@ export function renderMigrationPatternsMarkdown(patterns: MigrationPattern[]) {
 
 Detected Patterns
 
-| Pattern | Description | Recommendation |
-| --- | --- | --- |
+| Pattern | Confidence | Description | Detected Signals | Recommendation |
+| --- | --- | --- | --- | --- |
 ${patterns
   .map(
     (pattern) =>
-      `| ${pattern.id}: ${pattern.title} | ${pattern.description} | ${pattern.recommendation} |`,
+      `| ${pattern.id}: ${pattern.title} | ${pattern.confidence ?? "medium"} | ${pattern.description} | ${pattern.detectedSignals?.join("<br>") ?? "Detected by static audit signals."} | ${pattern.recommendation} |`,
   )
   .join("\n")}`;
 }
