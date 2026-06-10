@@ -141,6 +141,61 @@ function getSetupPermissionsInfo(podfile: string | null) {
   };
 }
 
+function podfileUsesLegacyReactNativePathConfig(podfile: string | null) {
+  return Boolean(podfile?.match(/config\s*\[\s*["']reactNativePath["']\s*\]/));
+}
+
+function androidUsesLegacyReactGradleApply(appGradle: string | null) {
+  return Boolean(appGradle?.includes("node_modules/react-native/react.gradle"));
+}
+
+function androidUsesLegacyReactNativeDependency(appGradle: string | null) {
+  return Boolean(
+    appGradle?.match(/com\.facebook\.react:react-native(?::|["'])/),
+  );
+}
+
+function androidUsesProjectExtReact(appGradle: string | null) {
+  return Boolean(appGradle?.includes("project.ext.react"));
+}
+
+function androidUsesFacebookReactPlugin(appGradle: string | null) {
+  return Boolean(
+    appGradle?.match(/apply plugin:\s*["']com\.facebook\.react["']/) ||
+      appGradle?.match(/id\s*["']com\.facebook\.react["']/),
+  );
+}
+
+function androidUsesReactAndroidDependency(appGradle: string | null) {
+  return Boolean(appGradle?.includes("com.facebook.react:react-android"));
+}
+
+function parseYarnLockPackageVersions(
+  lockfile: string | null,
+  packageName: string,
+) {
+  if (!lockfile) return [];
+
+  const versions = new Set<string>();
+
+  for (const block of lockfile.split(/\n(?=\S)/)) {
+    const [header = ""] = block.split("\n", 1);
+    const specs = header
+      .replace(/:$/, "")
+      .split(/,\s*/)
+      .map((spec) => spec.replace(/^"|"$/g, ""));
+
+    if (!specs.some((spec) => spec.startsWith(`${packageName}@`))) {
+      continue;
+    }
+
+    const version = block.match(/^  version "([^"]+)"/m)?.[1];
+    if (version) versions.add(version);
+  }
+
+  return Array.from(versions).sort();
+}
+
 const androidGradlePluginPresentUnknown = "present-unknown";
 
 function extractVersionFromMatches(
@@ -1123,6 +1178,13 @@ program
       setupPermissionsHandlers: [] as string[],
       setupPermissionsHandlersIdentified: false,
       setupPermissionsIsEmpty: false,
+      podfileUsesLegacyReactNativePathConfig: false,
+      androidUsesLegacyReactGradleApply: false,
+      androidUsesLegacyReactNativeDependency: false,
+      androidUsesProjectExtReact: false,
+      androidUsesReactAndroidDependency: undefined as boolean | undefined,
+      androidUsesFacebookReactPlugin: undefined as boolean | undefined,
+      lockfilePackageVersions: {} as Record<string, string[]>,
       hasGradleBuild: await fs.pathExists(androidBuildGradlePath),
       hasAppGradleBuild: await fs.pathExists(
         path.join(absolutePath, "android", "app", "build.gradle"),
@@ -1190,8 +1252,12 @@ program
     result.workflow = detectWorkflow(result);
 
     const androidBuildGradle = await readFileIfExists(androidBuildGradlePath);
+    const androidAppBuildGradle = await readFileIfExists(
+      path.join(absolutePath, "android", "app", "build.gradle"),
+    );
     const gradleWrapper = await readFileIfExists(androidGradleWrapperPath);
     const podfile = await readFileIfExists(podfilePath);
+    const yarnLock = await readFileIfExists(path.join(absolutePath, "yarn.lock"));
     const setupPermissionsInfo = getSetupPermissionsInfo(podfile);
 
     const gradleVersionMatch = gradleWrapper?.match(/gradle-([\d.]+)-/);
@@ -1206,6 +1272,25 @@ program
     result.setupPermissionsHandlersIdentified =
       setupPermissionsInfo.handlersIdentified;
     result.setupPermissionsIsEmpty = setupPermissionsInfo.isEmpty;
+    result.podfileUsesLegacyReactNativePathConfig =
+      podfileUsesLegacyReactNativePathConfig(podfile);
+    result.androidUsesLegacyReactGradleApply =
+      androidUsesLegacyReactGradleApply(androidAppBuildGradle);
+    result.androidUsesLegacyReactNativeDependency =
+      androidUsesLegacyReactNativeDependency(androidAppBuildGradle);
+    result.androidUsesProjectExtReact =
+      androidUsesProjectExtReact(androidAppBuildGradle);
+    result.androidUsesReactAndroidDependency =
+      androidAppBuildGradle === null
+        ? undefined
+        : androidUsesReactAndroidDependency(androidAppBuildGradle);
+    result.androidUsesFacebookReactPlugin =
+      androidAppBuildGradle === null
+        ? undefined
+        : androidUsesFacebookReactPlugin(androidAppBuildGradle);
+    result.lockfilePackageVersions = {
+      "lru-cache": parseYarnLockPackageVersions(yarnLock, "lru-cache"),
+    };
 
     if (result.expo && result.hasIOS && result.hasAndroid) {
       addRisk(
