@@ -16,7 +16,11 @@ import {
   groupNativeModuleFindings,
   scanNativeModules,
 } from "./scanners/nativeModuleScanner";
-import { buildMigrationAreas } from "./rules/migrationAreas";
+import {
+  buildMigrationAreaEvidence,
+  buildMigrationAreas,
+  type MigrationAreaEvidence,
+} from "./rules/migrationAreas";
 import { generateProposal, type Proposal } from "./core/generateProposal";
 import { generateMigrationTasks } from "./core/generateMigrationTasks";
 import { generateMigrationPlan } from "./core/generateMigrationPlan";
@@ -774,24 +778,60 @@ ${
   return sections.join("\n\n");
 }
 
+function formatEvidenceSource(source: MigrationAreaEvidence["source"]) {
+  if (source === "ast") return "AST";
+  if (source === "dependency") return "Dependency";
+  if (source === "native-module") return "Native Module";
+  return "Mixed";
+}
+
 function renderMigrationAreas(
   migrationAreas: ReturnType<typeof buildMigrationAreas>,
+  migrationAreaEvidence: MigrationAreaEvidence[],
 ) {
   if (!migrationAreas.length) {
     return "No major migration-sensitive areas detected from package usage.";
   }
 
-  return migrationAreas
-    .map(
-      (area) => `### ${area.area}
+  const evidenceByArea = new Map(
+    migrationAreaEvidence.map((evidence) => [evidence.area, evidence]),
+  );
+  const summaryRows = migrationAreas
+    .map((area) => {
+      const evidence = evidenceByArea.get(area.area);
+
+      return `| ${area.area} | ${formatEvidenceSource(evidence?.source ?? "dependency")} |`;
+    })
+    .join("\n");
+  const details = migrationAreas
+    .map((area) => {
+      const evidence = evidenceByArea.get(area.area);
+      const evidenceItems = evidence?.evidence.length
+        ? evidence.evidence
+        : area.packages.map((packageName) => `${packageName} package match`);
+
+      return `#### ${area.area}
 
 - Risk: ${area.risk.toUpperCase()}
+- Source: ${formatEvidenceSource(evidence?.source ?? "dependency")}
 - Packages:
 ${area.packages.map((pkg) => `  - ${pkg}`).join("\n")}
 - Why it matters: ${area.reason}
-- Suggested action: ${area.suggestedAction}`,
-    )
+- Suggested action: ${area.suggestedAction}
+
+Evidence:
+
+${evidenceItems.map((item) => `- ${item}`).join("\n")}`;
+    })
     .join("\n\n");
+
+  return `| Area | Confidence Source |
+|---|---|
+${summaryRows}
+
+### Migration Area Evidence
+
+${details}`;
 }
 
 function renderProposal(proposal: Proposal) {
@@ -1092,6 +1132,7 @@ program
         drivers: [],
       } as ComplexityScore,
       migrationAreas: [] as ReturnType<typeof buildMigrationAreas>,
+      migrationAreaEvidence: [] as MigrationAreaEvidence[],
       proposal: null as Proposal | null,
     };
 
@@ -1377,6 +1418,15 @@ program
         ...result.riskyDependencies.map((dependency) => dependency.name),
       ],
     );
+    result.migrationAreaEvidence = buildMigrationAreaEvidence({
+      migrationAreas: result.migrationAreas,
+      astPackageUsages: result.astScan.packageUsages,
+      dependencyPackageNames: [
+        ...Object.keys(dependencies),
+        ...result.riskyDependencies.map((dependency) => dependency.name),
+      ],
+      nativeModuleGroups: result.nativeModuleGroups,
+    });
 
     if (result.astScan.deprecatedImports.length > 0) {
       addRisk(
@@ -1439,7 +1489,10 @@ program
     result.proposal = generateProposal(result);
     const executiveSummary = createExecutiveSummary(result);
     const topBlockers = getTopBlockers(result.risks);
-    const migrationAreasSection = renderMigrationAreas(result.migrationAreas);
+    const migrationAreasSection = renderMigrationAreas(
+      result.migrationAreas,
+      result.migrationAreaEvidence,
+    );
     const proposalSection = renderProposal(result.proposal);
     const baselineReadinessSection = renderBaselineReadiness(
       result.baselineReadiness,
@@ -1552,7 +1605,7 @@ ${migrationPlan}
 
 ${deprecatedApiSection}
 
-## Migration Sensitive Areas
+## Migration Areas
 
 ${migrationAreasSection}
 

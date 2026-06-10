@@ -1,14 +1,14 @@
 # Real-World Validation Matrix
 
-Updated for the Android Gradle Plugin extraction accuracy milestone. Rocket.Chat.ReactNative, eigen, and status-mobile were rerun from local `validation-repos/` source checkouts.
+Updated for the migration-area source confidence milestone. Rocket.Chat.ReactNative, eigen, and status-mobile were rerun from local `validation-repos/` source checkouts.
 
 ## Summary Matrix
 
 | Repository | Workflow | RN Version | Risk | Baseline | Proposal | Native Modules | Complexity | Migration Areas | Notes |
 |---|---|---:|---|---|---|---:|---|---|---|
-| Rocket.Chat.ReactNative | expo-bare-or-prebuild | 0.81.5 | high | not-ready | Manual Review Required | 15 groups / 21 raw | 88 extreme | Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage | AGP plugin usage now reports `present-unknown` instead of `null`; version is not declared in checked Gradle files. |
-| eigen | expo-bare-or-prebuild | 0.83.6 | high | not-ready | Manual Review Required | 10 groups / 19 raw | 77 high | Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage | AGP plugin usage now reports `present-unknown` instead of `null`; version is not declared in checked Gradle files. |
-| status-mobile | bare-react-native | 0.73.5 | high | warning | Upgrade Sprint | 0 groups / 0 raw | 62 significant | Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage | AGP version now resolves to `7.4.2` from `android/gradle.properties`. |
+| Rocket.Chat.ReactNative | expo-bare-or-prebuild | 0.81.5 | high | not-ready | Manual Review Required | 15 groups / 21 raw | 88 extreme | Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage | Migration-area evidence now shows mostly AST sources, with mixed sources where dependencies add evidence. |
+| eigen | expo-bare-or-prebuild | 0.83.6 | high | not-ready | Manual Review Required | 10 groups / 19 raw | 77 high | Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage | Migration-area evidence shows AST/mixed sources; Bluetooth remains absent. |
+| status-mobile | bare-react-native | 0.73.5 | high | warning | Upgrade Sprint | 0 groups / 0 raw | 62 significant | Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage | Migration areas recovered from dependency fallback because `.cljs` imports are not parsed. |
 | react-native-firebase | expo-managed | 0.74.5 | high | warning | Upgrade Audit | 0 groups / 0 raw | 18 low | Navigation, Storage | Unchanged. Managed Expo classification still looks correct. Risk/proposal explanation remains a future improvement. |
 | firebase-instagram | expo-managed | Expo SDK 35 (legacy React Native baseline) | high | not-ready | Upgrade Sprint | 0 groups / 0 raw | 25 moderate | Permissions, UI / Native Visual Components | Mixed `yarn.lock` and `package-lock.json` are now reported as package-manager risk. |
 
@@ -16,6 +16,9 @@ Updated for the Android Gradle Plugin extraction accuracy milestone. Rocket.Chat
 
 | Repository | Before | After | Result |
 |---|---|---|---|
+| status-mobile | Migration areas were listed without showing they came from dependency fallback. | All recovered areas show `Dependency` confidence source with package evidence such as `react-native-mmkv dependency`. | Users can see that areas were recovered from dependencies because `.cljs` imports are not parsed. |
+| Rocket.Chat.ReactNative | Migration areas were listed without source confidence. | Report shows confidence sources such as `Camera: AST`, `Navigation: AST`, and mixed areas where dependency evidence contributes. | Users can see source imports versus dependency-only evidence. |
+| eigen | Migration areas were listed without source confidence; Bluetooth had previously been a concern. | Report shows AST/mixed evidence sources and no Bluetooth area. | Source transparency added without reintroducing the Bluetooth false positive. |
 | Rocket.Chat.ReactNative | `androidGradlePlugin: null` despite `com.android.tools.build:gradle` and `com.android.application` usage. | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. | Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files. |
 | eigen | `androidGradlePlugin: null` despite `com.android.tools.build:gradle` and `com.android.application` usage. | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. | Resolved false absence; version remains unresolved because no version is declared in scanned Gradle files. |
 | status-mobile | `androidGradlePlugin: null` even though `gradlePluginVersion=7.4.2` exists in `android/gradle.properties`. | `androidGradlePlugin: "7.4.2"`; report shows `Android Gradle Plugin: 7.4.2`. | Resolved AGP version extraction through Gradle properties. |
@@ -43,8 +46,10 @@ Actual findings after fixes:
 - Proposal: `Manual Review Required`.
 - Native groups include `A11yFlow`, `ExternalInput`, `InvertedScroll`, `SecureStorage`, `Voip`, and related Turbo/Swift bridge modules.
 - Migration areas: Camera, Navigation, Authentication SDKs, UI / Native Visual Components, Storage.
+- Migration area evidence: Camera and Navigation are AST-sourced; Authentication SDKs and UI / Native Visual Components are mixed; Storage is AST-sourced.
 
 Resolved issues:
+- Migration-area confidence sources and evidence details are now visible in the report.
 - Android Gradle Plugin usage now reports `present-unknown` instead of `null` when the plugin is present but the version is not declared in scanned files.
 - Typecheck script detection now recognizes embedded `tsc` commands such as Rocket.Chat's `lint` script.
 
@@ -69,8 +74,10 @@ Actual findings after fixes:
 - Baseline: `not-ready` due to 10 native module groups.
 - Proposal: `Manual Review Required`.
 - Migration areas: Navigation, Authentication SDKs, Permissions, UI / Native Visual Components, Storage.
+- Migration area evidence: Navigation, Authentication SDKs, and UI / Native Visual Components are mixed; Permissions and Storage are AST-sourced.
 
 Resolved issues:
+- Migration-area confidence sources and evidence details are now visible in the report.
 - Android Gradle Plugin usage now reports `present-unknown` instead of `null` when the plugin is present but the version is not declared in scanned files.
 - Typecheck script aliases `type-check` and `ci:type-check` are now recognized.
 - Bluetooth false positive removed.
@@ -95,8 +102,10 @@ Actual findings after fixes:
 - Proposal: `Upgrade Sprint`.
 - Risky dependencies include Reanimated, Gesture Handler, Firebase App, React Native Navigation, MMKV, and WebView.
 - Migration areas: Camera, Navigation, Authentication SDKs, Media, Permissions, UI / Native Visual Components, Storage.
+- Migration area evidence: all recovered areas are dependency-sourced because `.cljs` imports are not parsed by the AST scanner.
 
 Resolved issues:
+- Migration areas now explicitly show `Dependency` confidence source and package evidence.
 - Android Gradle Plugin now resolves to `7.4.2` from `android/gradle.properties`.
 - Empty migration-area false negative resolved by dependency-derived fallback.
 - `react-native-navigation`, `react-native-mmkv`, `react-native-camera-kit`, `react-native-permissions`, camera roll, and Firebase dependencies now contribute to migration areas.
@@ -170,7 +179,7 @@ New issues introduced:
 | 5 | Firebase/Auth label is broad | Firebase analytics/messaging/app can map to Authentication SDKs | Area label may overstate auth-specific work. |
 | 6 | Risk/proposal mismatch needs explanation | react-native-firebase has `riskLevel: high`, complexity `low`, proposal `Upgrade Audit` | Users may question why high risk maps to a small proposal. |
 | 7 | Expo SDK-to-RN baseline map is intentionally minimal | SDK 35 is mapped; other old SDK tarballs may need mappings | Future non-semver Expo baselines may still need manual review. |
-| 8 | Dependency fallback cannot show exact source files | status-mobile areas are package-derived | Report identifies areas but not source usage points. |
+| 8 | Dependency fallback cannot show exact source files | status-mobile areas are package-derived | Report now labels these as dependency-sourced, but exact `.cljs` source locations remain unavailable. |
 
 ## Improvement Opportunities
 
@@ -183,9 +192,17 @@ New issues introduced:
 | 5 | Split Firebase/Auth migration labels into Firebase Services vs Authentication SDKs | medium |
 | 6 | Add explanatory copy when risk level and complexity/proposal diverge | medium |
 | 7 | Expand Expo SDK tarball normalization map beyond SDK 35 | medium |
-| 8 | Add confidence/source labels to migration areas: AST-derived vs dependency-derived | medium |
+| 8 | Add source parsing support for `.cljs` or other non-TypeScript app source layouts | medium |
 
 ## This Milestone Verification
+
+| Case | Command | Result |
+|---|---|---|
+| status-mobile migration-area evidence | `yarn run audit validation-repos/status-mobile --out validation-results/status-mobile` | All migration areas show `Dependency` source; evidence lists dependency packages such as `react-native-navigation dependency` and `react-native-mmkv dependency`. |
+| Rocket.Chat.ReactNative migration-area evidence | `yarn run audit validation-repos/Rocket.Chat.ReactNative --out validation-results/Rocket.Chat.ReactNative` | Most areas show `AST`; mixed areas include both source usage and dependency evidence. |
+| eigen migration-area evidence | `yarn run audit validation-repos/eigen --out validation-results/eigen` | Areas show `AST` or `Mixed`; Bluetooth area remains absent. |
+
+## Previous Milestone Verification
 
 | Case | Command | Result |
 |---|---|---|
@@ -193,7 +210,7 @@ New issues introduced:
 | eigen AGP | `yarn run audit validation-repos/eigen --out validation-results/eigen` | `androidGradlePlugin: "present-unknown"`; report shows `Present (version could not be determined)`. |
 | status-mobile AGP | `yarn run audit validation-repos/status-mobile --out validation-results/status-mobile` | `androidGradlePlugin: "7.4.2"`; report shows `Android Gradle Plugin: 7.4.2`. |
 
-## Previous Milestone Verification
+## Earlier Milestone Verification
 
 | Case | Command | Result |
 |---|---|---|

@@ -12,6 +12,29 @@ export type MigrationArea = {
   suggestedAction: string;
 };
 
+export type MigrationAreaEvidenceSource =
+  | "ast"
+  | "dependency"
+  | "native-module"
+  | "mixed";
+
+export type MigrationAreaEvidence = {
+  area: string;
+  source: MigrationAreaEvidenceSource;
+  evidence: string[];
+};
+
+type PackageUsageLike = {
+  packageName: string;
+  files?: string[];
+};
+
+type NativeModuleGroupLike = {
+  name: string;
+  platforms: string[];
+  files: string[];
+};
+
 const areaRules = [
   {
     area: "Navigation",
@@ -172,6 +195,105 @@ function buildAreasFromPackages(packageNames: string[]): MigrationArea[] {
   return areas.sort((a, b) => {
     const weight = { high: 3, medium: 2, low: 1 };
     return weight[b.risk] - weight[a.risk];
+  });
+}
+
+function getEvidenceSource(sources: Set<Exclude<MigrationAreaEvidenceSource, "mixed">>) {
+  if (sources.size > 1) return "mixed";
+  return [...sources][0] ?? "dependency";
+}
+
+function appendEvidence(
+  evidence: Map<string, { sources: Set<Exclude<MigrationAreaEvidenceSource, "mixed">>; evidence: Set<string> }>,
+  area: string,
+  source: Exclude<MigrationAreaEvidenceSource, "mixed">,
+  item: string,
+) {
+  if (!evidence.has(area)) {
+    evidence.set(area, {
+      sources: new Set(),
+      evidence: new Set(),
+    });
+  }
+
+  const areaEvidence = evidence.get(area)!;
+  areaEvidence.sources.add(source);
+  areaEvidence.evidence.add(item);
+}
+
+function addPackageEvidence(
+  evidence: Map<string, { sources: Set<Exclude<MigrationAreaEvidenceSource, "mixed">>; evidence: Set<string> }>,
+  packageName: string,
+  source: "ast" | "dependency",
+  detail: string,
+) {
+  for (const rule of areaRules) {
+    if (matchesAreaRule(packageName, rule)) {
+      appendEvidence(evidence, rule.area, source, detail);
+    }
+  }
+}
+
+function addNativeModuleEvidence(
+  evidence: Map<string, { sources: Set<Exclude<MigrationAreaEvidenceSource, "mixed">>; evidence: Set<string> }>,
+  group: NativeModuleGroupLike,
+) {
+  for (const rule of areaRules) {
+    if (matchesAreaRule(group.name, rule)) {
+      appendEvidence(
+        evidence,
+        rule.area,
+        "native-module",
+        `${group.name} native module group (${group.platforms.join(", ")})`,
+      );
+    }
+  }
+}
+
+export function buildMigrationAreaEvidence(input: {
+  migrationAreas: MigrationArea[];
+  astPackageUsages: PackageUsageLike[];
+  dependencyPackageNames: string[];
+  nativeModuleGroups: NativeModuleGroupLike[];
+}): MigrationAreaEvidence[] {
+  const evidence = new Map<
+    string,
+    { sources: Set<Exclude<MigrationAreaEvidenceSource, "mixed">>; evidence: Set<string> }
+  >();
+
+  for (const usage of input.astPackageUsages) {
+    const files = usage.files?.length
+      ? ` used in ${usage.files.slice(0, 3).join(", ")}${usage.files.length > 3 ? ` and ${usage.files.length - 3} more file(s)` : ""}`
+      : " import";
+    addPackageEvidence(evidence, usage.packageName, "ast", `${usage.packageName}${files}`);
+  }
+
+  const astPackageNames = new Set(
+    input.astPackageUsages.map((usage) => usage.packageName),
+  );
+
+  for (const packageName of input.dependencyPackageNames) {
+    if (astPackageNames.has(packageName)) continue;
+    addPackageEvidence(evidence, packageName, "dependency", `${packageName} dependency`);
+  }
+
+  for (const group of input.nativeModuleGroups) {
+    addNativeModuleEvidence(evidence, group);
+  }
+
+  return input.migrationAreas.map((area) => {
+    const areaEvidence = evidence.get(area.area);
+    const packageFallback = area.packages.map((packageName) => `${packageName} package match`);
+
+    return {
+      area: area.area,
+      source: areaEvidence ? getEvidenceSource(areaEvidence.sources) : "dependency",
+      evidence: areaEvidence
+        ? [...areaEvidence.evidence].sort()
+        : packageFallback.length
+          ? packageFallback
+          : ["Migration area matched by package classification."],
+    };
   });
 }
 
