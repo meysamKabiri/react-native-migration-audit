@@ -12,6 +12,7 @@ import {
 import { packageRules } from "./rules/packageRules";
 import { scanSourceCode } from "./scanners/sourceCodeScanner";
 import { scanAst } from "./scanners/astScanner";
+import { scanBarrels } from "./scanners/barrelScanner";
 import {
   groupNativeModuleFindings,
   scanNativeModules,
@@ -771,6 +772,61 @@ ${finding.files
     )
     .join("\n\n");
 }
+function renderRuntimeRiskIndicators(
+  result: Record<string, unknown>,
+) {
+  const barrelAnalysis = result.barrelAnalysis as {
+    hasLargeBarrels?: boolean;
+    largestBarrelExportCount?: number;
+    barrelCount?: number;
+    barrelFiles?: string[];
+    barrelDetails?: { path: string; reexportCount: number }[];
+  } | undefined;
+  const migrationAreasCount = (result.migrationAreas as unknown[] | undefined)?.length ?? 0;
+  const knownPatterns = result.knownMigrationPatterns as
+    | { id: string; title: string }[]
+    | undefined;
+  const hasBarrelPattern = knownPatterns?.some(
+    (p) => p.id === "PATTERN-019",
+  );
+
+  const indicators: string[] = [];
+
+  if (barrelAnalysis?.hasLargeBarrels) {
+    indicators.push(
+      `Large barrel exports: ${barrelAnalysis.barrelDetails?.filter((b) => b.reexportCount >= 10).map((b) => `${b.path} (${b.reexportCount} exports)`).join(", ") || `${barrelAnalysis.barrelCount} barrel(s), largest has ${barrelAnalysis.largestBarrelExportCount} exports`}.`,
+    );
+  }
+
+  if (hasBarrelPattern) {
+    indicators.push(
+      "Circular barrel import risk detected — consider validating screen imports and replacing runtime-sensitive barrel imports with direct imports.",
+    );
+  }
+
+  if (barrelAnalysis?.barrelCount && barrelAnalysis.barrelCount > 0) {
+    indicators.push(
+      `${barrelAnalysis.barrelCount} barrel file(s) found in the project.`,
+    );
+  }
+
+  if (migrationAreasCount >= 3) {
+    indicators.push(
+      `${migrationAreasCount} migration-sensitive areas — multiple screens likely import from shared barrels.`,
+    );
+  }
+
+  if (!indicators.length) return "";
+
+  return `## Runtime Risk Indicators
+
+${indicators.map((i) => `- ${i}`).join("\n")}
+
+This section is informational. It does not affect readiness scoring or migration recommendations.
+
+`;
+}
+
 function renderNativeModuleFindings(
   groups: ReturnType<typeof groupNativeModuleFindings>,
 ) {
@@ -1245,6 +1301,13 @@ program
       } as ComplexityScore,
       migrationAreas: [] as ReturnType<typeof buildMigrationAreas>,
       migrationAreaEvidence: [] as MigrationAreaEvidence[],
+      barrelAnalysis: {
+        hasLargeBarrels: false,
+        largestBarrelExportCount: 0,
+        barrelCount: 0,
+        barrelFiles: [] as string[],
+        barrelDetails: [] as { path: string; reexportCount: number }[],
+      },
       knownMigrationPatterns: [] as MigrationPattern[],
       proposal: null as Proposal | null,
     };
@@ -1553,6 +1616,7 @@ program
       result.nativeModuleFindings,
     );
     result.astScan = scanAst(absolutePath);
+    result.barrelAnalysis = await scanBarrels(absolutePath);
     result.migrationAreas = buildMigrationAreas(
       result.astScan.packageUsages.map((usage) => usage.packageName),
       [
@@ -1731,6 +1795,8 @@ ${
 }
 
 ${knownMigrationPatternsSection}
+
+${renderRuntimeRiskIndicators(result)}
 
 ## Recommended Next Steps
 

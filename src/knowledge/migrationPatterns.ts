@@ -64,6 +64,13 @@ type MigrationPatternAuditFacts = {
     androidGradlePlugin?: string | null;
     gradle?: string | null;
   };
+  barrelAnalysis?: {
+    hasLargeBarrels: boolean;
+    largestBarrelExportCount: number;
+    barrelCount: number;
+    barrelFiles: string[];
+    barrelDetails: { path: string; reexportCount: number }[];
+  };
 };
 
 export const migrationPatterns: MigrationPattern[] = [
@@ -158,6 +165,7 @@ export const migrationPatterns: MigrationPattern[] = [
       "react-native-permissions dependency or source usage is detected.",
       "iOS project is present.",
       "Podfile is missing, setup_permissions(...) is missing, setup_permissions(...) appears empty, or permission handlers cannot be identified.",
+      "Permissions migration area evidence is present, increasing runtime validation confidence.",
       "Known symptoms include 'No permission handler detected' and RNPermissionsModule constantsToExport crash.",
     ],
     recommendation:
@@ -235,6 +243,115 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Compare Android configuration against the RN 0.71 template. Verify com.facebook.react plugin, react-android dependency usage, Hermes configuration, and Gradle/AGP compatibility.",
+  },
+  {
+    id: "PATTERN-013",
+    title: "React Native Video ExoPlayer Resource Resolution Issue",
+    description:
+      "Android builds may fail after React Native upgrades because react-native-video ExoPlayer resources are no longer resolved correctly.",
+    affectedVersions: ["React Native >=0.71", "react-native-video <6.0.0"],
+    detectionCriteria: [
+      "react-native-video dependency or source usage is detected.",
+      "Android project is present.",
+      "RN version or upgrade target is 0.71 or newer.",
+      "Detected react-native-video version is a legacy pre-6 version.",
+      "Known symptoms include cannot find symbol R, resource linking failed, ExoPlayer resource compilation failures, and Android build failure in react-native-video.",
+    ],
+    recommendation:
+      "Verify react-native-video compatibility with the target RN milestone. Check ExoPlayer integration and Android Gradle compatibility.",
+  },
+  {
+    id: "PATTERN-014",
+    title: "Legacy Android Annotation Processor / Typedef Extraction Issue",
+    description:
+      "Android compilation can fail because older libraries rely on deprecated annotation extraction or typedef generation mechanisms removed in newer Android Gradle tooling.",
+    affectedVersions: ["React Native >=0.71", "Modern Android Gradle Plugin", "legacy Android native libraries"],
+    detectionCriteria: [
+      "Android project is present.",
+      "RN version or upgrade target is 0.71 or newer.",
+      "Modern Android Gradle Plugin or RN Android template migration is expected.",
+      "Known older native Android libraries are present.",
+      "Known symptoms include extractAnnotations, generateTypedefs, annotation processor failures, and Android build breaks after Gradle upgrade.",
+    ],
+    recommendation:
+      "Inspect Android library build.gradle files for legacy annotation extraction tasks. Compare against modern Android Gradle templates.",
+  },
+  {
+    id: "PATTERN-015",
+    title: "Unused MLKit Flavor Dependency Issue",
+    description:
+      "react-native-camera may pull legacy MLKit flavor dependencies that fail compilation or dependency resolution after RN/Gradle upgrades.",
+    affectedVersions: ["react-native-camera <4.0.0", "Android projects"],
+    detectionCriteria: [
+      "react-native-camera dependency or source usage is detected.",
+      "Android project is present.",
+      "Detected react-native-camera version is the legacy package line with Android flavors.",
+      "Known symptoms include MLKit dependency resolution failure, Android compile failure, and missing MLKit artifacts.",
+    ],
+    recommendation:
+      "Review react-native-camera flavors. Disable unused MLKit integrations only after verifying required camera features.",
+  },
+  {
+    id: "PATTERN-016",
+    title: "Legacy SVG Transformer Metro Compatibility Issue",
+    description:
+      "Metro can start but bundling or runtime can fail because an older react-native-svg-transformer implementation is incompatible with the upgraded Metro pipeline.",
+    affectedVersions: ["React Native >=0.71", "react-native-svg-transformer <1.0.0"],
+    detectionCriteria: [
+      "react-native-svg-transformer is present.",
+      "SVG runtime dependencies or SVG-related package usage are detected.",
+      "RN version or upgrade target is 0.71 or newer.",
+      "Detected transformer version is significantly older than RN milestone expectations.",
+      "Known symptoms include transformFile failures, SVG import failures, Metro bundling errors, and runtime crashes when loading SVG assets.",
+    ],
+    recommendation:
+      "Verify react-native-svg-transformer compatibility with the target RN milestone. Review Metro SVG transformer configuration.",
+  },
+  {
+    id: "PATTERN-017",
+    title: "react-native-screens AppCompat Theme Attribute Issue",
+    description:
+      "Android builds can fail because older react-native-screens versions reference AppCompat theme attributes that are no longer resolved correctly.",
+    affectedVersions: ["React Native >=0.74", "react-native-screens <3.25.0"],
+    detectionCriteria: [
+      "react-native-screens dependency or source usage is detected.",
+      "Android project is present.",
+      "RN version or upgrade target is 0.74 or newer.",
+      "Detected react-native-screens version is below the conservative compatibility threshold.",
+      "Known symptoms include colorPrimary not found, AppCompat theme attribute failure, resource linking errors, and react-native-screens Android build failure.",
+    ],
+    recommendation:
+      "Verify react-native-screens compatibility with the target RN version. Review Android theme and AppCompat dependencies.",
+  },
+  {
+    id: "PATTERN-018",
+    title: "Native UI Component Missing From UIManager",
+    description:
+      "An application can build successfully but crash at runtime because a native UI component is not registered in UIManager after a React Native upgrade.",
+    affectedVersions: ["React Native upgraded apps", "native UI component packages with weak autolinking support"],
+    detectionCriteria: [
+      "Native UI dependency evidence is detected.",
+      "iOS or Android native project is present.",
+      "Package is known to expose requireNativeComponent or native visual components.",
+      "High confidence requires known missing or weak podspec/autolinking support.",
+      "Known symptoms include requireNativeComponent(...) was not found in the UIManager, Invariant Violation, and native component not registered.",
+    ],
+    recommendation:
+      "Verify native module installation. Inspect Podfile and Android native registration. Confirm the native component exists in the upgraded dependency version and review autolinking compatibility.",
+  },
+  {
+    id: "PATTERN-019",
+    title: "Circular Barrel Import Runtime Crash",
+    description:
+      "Application builds successfully, Metro bundles successfully, and the app launches, but runtime navigation to certain screens can crash because circular dependencies exist through barrel exports (index.ts / index.tsx).",
+    detectionCriteria: [
+      "Large barrel export files detected in the project.",
+      "Multiple screen areas import from shared barrels.",
+      "Barrel re-exports many components, creating runtime circular dependency risk after Metro/module resolution changes.",
+      "Known symptoms include Cannot read property 'ActionBar' of undefined, Cannot read property 'style' of undefined, TypeError on screen navigation, and imported component unexpectedly undefined.",
+    ],
+    recommendation:
+      "Avoid importing runtime-sensitive components from large barrel exports. Prefer direct imports for ActionBar, Table, modal components, BLE components, native UI wrappers, and runtime-sensitive screen dependencies. Investigate circular dependency chains involving index.ts/index.tsx barrels.",
   },
 ];
 
@@ -420,7 +537,9 @@ function buildPermissionsPatternSignals(result: MigrationPatternAuditFacts) {
 }
 
 function getPermissionsPatternConfidence(result: MigrationPatternAuditFacts) {
-  return hasPermissionsHandlerConfigurationIssue(result) ? "high" : "low";
+  if (hasPermissionsHandlerConfigurationIssue(result)) return "high";
+  if (hasMigrationArea(result, "Permissions")) return "medium";
+  return "low";
 }
 
 function hasRn071PodfileConfigRisk(result: MigrationPatternAuditFacts) {
@@ -657,6 +776,16 @@ const toolingVersionSkewPackages = [
   "@react-native/metro-config",
 ];
 
+const knownLegacyAnnotationRiskPackages = [
+  { name: "react-native-camera", threshold: "4.0.0" },
+  { name: "react-native-video", threshold: "6.0.0" },
+  { name: "react-native-gesture-handler", threshold: "2.0.0" },
+  { name: "@react-native-community/netinfo", threshold: "8.0.0" },
+  { name: "react-native-device-info", threshold: "9.0.0" },
+  { name: "react-native-fs", threshold: "2.20.0" },
+  { name: "react-native-sound", threshold: "0.12.0" },
+];
+
 function getToolingVersionMinor(
   result: MigrationPatternAuditFacts,
   packageName: string,
@@ -672,6 +801,268 @@ function hasClipboardEvidence(result: MigrationPatternAuditFacts) {
     hasPackageUsage(result, "@react-native-clipboard/clipboard") ||
     (result.deprecatedApiFindings?.some((finding) => finding.api === "Clipboard") ?? false)
   );
+}
+
+function dependencyVersionIsBelow(
+  result: MigrationPatternAuditFacts,
+  packageName: string,
+  version: string,
+) {
+  const comparison = compareVersions(getDependencyVersion(result, packageName), version);
+  return comparison !== null && comparison < 0;
+}
+
+function buildVersionedDependencySignals(
+  result: MigrationPatternAuditFacts,
+  packageName: string,
+  threshold?: string,
+) {
+  const signals: string[] = [];
+  const version = getDependencyVersion(result, packageName);
+
+  if (version) {
+    signals.push(`${packageName} version detected: ${version}.`);
+  } else if (hasPackageUsage(result, packageName)) {
+    signals.push(`${packageName} source usage is detected.`);
+  }
+
+  if (threshold) {
+    signals.push(`Conservative version threshold used by this heuristic: ${threshold}.`);
+  }
+
+  return signals;
+}
+
+function hasReactNativeVideoExoplayerRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.hasAndroid &&
+      targetsReactNativeAtLeast(result, 71) &&
+      hasDependencyEvidence(result, "react-native-video") &&
+      dependencyVersionIsBelow(result, "react-native-video", "6.0.0"),
+  );
+}
+
+function buildReactNativeVideoExoplayerSignals(result: MigrationPatternAuditFacts) {
+  return [
+    ...(result.hasAndroid ? ["Android project is present."] : []),
+    ...(targetsReactNativeAtLeast(result, 71)
+      ? ["RN version or upgrade path includes 0.71 or newer."]
+      : []),
+    ...buildVersionedDependencySignals(result, "react-native-video", "6.0.0"),
+    "Symptom to watch: ExoPlayer resources or R references fail during Android compilation.",
+  ];
+}
+
+function getLegacyAnnotationRiskPackages(result: MigrationPatternAuditFacts) {
+  return knownLegacyAnnotationRiskPackages.filter(({ name, threshold }) =>
+    dependencyVersionIsBelow(result, name, threshold),
+  );
+}
+
+function hasModernAndroidToolingRiskContext(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    targetsReactNativeAtLeast(result, 71) ||
+      result.androidUsesFacebookReactPlugin ||
+      result.androidUsesReactAndroidDependency ||
+      !isAndroidGradlePluginOlderThan(result, "7.3.0"),
+  );
+}
+
+function hasLegacyAndroidAnnotationRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.hasAndroid &&
+      hasModernAndroidToolingRiskContext(result) &&
+      getLegacyAnnotationRiskPackages(result).length > 0,
+  );
+}
+
+function buildLegacyAndroidAnnotationSignals(result: MigrationPatternAuditFacts) {
+  const packages = getLegacyAnnotationRiskPackages(result);
+  const signals: string[] = [];
+
+  if (result.hasAndroid) signals.push("Android project is present.");
+  if (targetsReactNativeAtLeast(result, 71)) {
+    signals.push("RN version or upgrade path includes 0.71 or newer.");
+  }
+  if (result.nativeVersions?.androidGradlePlugin) {
+    signals.push(`Android Gradle Plugin detected: ${result.nativeVersions.androidGradlePlugin}.`);
+  }
+  if (packages.length) {
+    signals.push(
+      `Older native Android libraries detected: ${packages
+        .map(({ name, threshold }) => `${name} <${threshold}`)
+        .join(", ")}.`,
+    );
+  }
+  signals.push("Symptoms to watch: extractAnnotations, generateTypedefs, and typedefs.txt failures.");
+
+  return signals;
+}
+
+function hasUnusedMlkitFlavorRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.hasAndroid &&
+      hasDependencyEvidence(result, "react-native-camera") &&
+      dependencyVersionIsBelow(result, "react-native-camera", "4.0.0"),
+  );
+}
+
+function buildUnusedMlkitFlavorSignals(result: MigrationPatternAuditFacts) {
+  return [
+    ...(result.hasAndroid ? ["Android project is present."] : []),
+    ...buildVersionedDependencySignals(result, "react-native-camera", "4.0.0"),
+    "Legacy react-native-camera package line commonly defines Android MLKit/general flavors.",
+    "Symptom to watch: unused MLKit flavor resolves obsolete MLKit/Firebase artifacts.",
+  ];
+}
+
+function hasLegacySvgTransformerRisk(result: MigrationPatternAuditFacts) {
+  const hasSvgEvidence = Boolean(
+    hasDependency(result, "react-native-svg") || hasPackageUsage(result, "react-native-svg"),
+  );
+
+  return Boolean(
+    targetsReactNativeAtLeast(result, 71) &&
+      hasSvgEvidence &&
+      hasDependency(result, "react-native-svg-transformer") &&
+      dependencyVersionIsBelow(result, "react-native-svg-transformer", "1.0.0"),
+  );
+}
+
+function buildLegacySvgTransformerSignals(result: MigrationPatternAuditFacts) {
+  return [
+    ...(targetsReactNativeAtLeast(result, 71)
+      ? ["RN version or upgrade path includes 0.71 or newer."]
+      : []),
+    ...buildVersionedDependencySignals(result, "react-native-svg-transformer", "1.0.0"),
+    ...(hasDependency(result, "react-native-svg")
+      ? [`react-native-svg version detected: ${getDependencyVersion(result, "react-native-svg")}.`]
+      : []),
+    ...(result.hasMetroConfig ? ["Metro config is present."] : []),
+    "Symptoms to watch: transformFile failures and SVG import/runtime crashes.",
+  ];
+}
+
+const knownScreensAppCompatThreshold = "3.25.0";
+
+function hasScreensAppCompatRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.hasAndroid &&
+      targetsReactNativeAtLeast(result, 74) &&
+      hasDependencyEvidence(result, "react-native-screens") &&
+      dependencyVersionIsBelow(
+        result,
+        "react-native-screens",
+        knownScreensAppCompatThreshold,
+      ),
+  );
+}
+
+function buildScreensAppCompatSignals(result: MigrationPatternAuditFacts) {
+  return [
+    ...(result.hasAndroid ? ["Android project is present."] : []),
+    ...(targetsReactNativeAtLeast(result, 74)
+      ? ["RN version or upgrade path includes 0.74 or newer."]
+      : []),
+    ...buildVersionedDependencySignals(
+      result,
+      "react-native-screens",
+      knownScreensAppCompatThreshold,
+    ),
+    "Symptom to watch: unresolved AppCompat colorPrimary theme attribute in react-native-screens Android sources.",
+  ];
+}
+
+function hasNativeUiComponentRegistrationRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.hasIOS &&
+      targetsReactNativeAtLeast(result, 71) &&
+      hasDependencyEvidence(result, "react-native-radial-gradient") &&
+      !dependencyVersionIsBelow(result, "react-native-radial-gradient", "1.0.0") &&
+      dependencyVersionIsBelow(result, "react-native-radial-gradient", "1.2.0"),
+  );
+}
+
+function buildNativeUiComponentRegistrationSignals(result: MigrationPatternAuditFacts) {
+  return [
+    ...(result.hasIOS ? ["iOS project is present."] : []),
+    ...(targetsReactNativeAtLeast(result, 71)
+      ? ["RN version or upgrade path includes 0.71 or newer."]
+      : []),
+    ...buildVersionedDependencySignals(result, "react-native-radial-gradient", "1.2.0"),
+    "react-native-radial-gradient exposes native UI component SRSRadialGradient via requireNativeComponent.",
+    "Known package line has weak/missing iOS podspec autolinking support in published artifacts.",
+  ];
+}
+
+function hasCircularBarrelImportRisk(result: MigrationPatternAuditFacts) {
+  return Boolean(
+    result.barrelAnalysis?.hasLargeBarrels &&
+      result.barrelAnalysis.barrelCount > 0,
+  );
+}
+
+function buildCircularBarrelImportSignals(result: MigrationPatternAuditFacts) {
+  const signals: string[] = [];
+
+  if (result.barrelAnalysis?.barrelCount) {
+    signals.push(
+      `${result.barrelAnalysis.barrelCount} barrel file(s) with re-exports detected.`,
+    );
+  }
+
+  if (result.barrelAnalysis?.largestBarrelExportCount) {
+    signals.push(
+      `Largest barrel exports ${result.barrelAnalysis.largestBarrelExportCount} modules.`,
+    );
+  }
+
+  if (result.barrelAnalysis?.hasLargeBarrels) {
+    signals.push(
+      "Large barrel files found — any of these may introduce circular dependency chains when imported by screens.",
+    );
+  }
+
+  if (result.barrelAnalysis?.barrelDetails.length) {
+    const largeBarrels = result.barrelAnalysis.barrelDetails.filter(
+      (b) => b.reexportCount >= 10,
+    );
+    if (largeBarrels.length) {
+      signals.push(
+        `Large export barrels: ${largeBarrels.map((b) => `${b.path} (${b.reexportCount} exports)`).join(", ")}.`,
+      );
+    }
+  }
+
+  const areaCount = result.migrationAreas?.length ?? 0;
+  if (areaCount >= 3) {
+    signals.push(
+      `${areaCount} migration-sensitive areas detected — screens likely import from shared barrels.`,
+    );
+  }
+
+  if (result.hasMetroConfig) {
+    signals.push(
+      "Metro config present — module resolution changes may affect barrel export behavior after RN upgrade.",
+    );
+  }
+
+  signals.push(
+    "Symptom to watch: Cannot read property 'X' of undefined when navigating to screens that import from large barrels.",
+  );
+
+  return signals;
+}
+
+function getCircularBarrelConfidence(result: MigrationPatternAuditFacts) {
+  const areaCount = result.migrationAreas?.length ?? 0;
+  if (result.barrelAnalysis?.hasLargeBarrels && areaCount >= 3) {
+    return "high" as const;
+  }
+  if (result.barrelAnalysis?.hasLargeBarrels) {
+    return "medium" as const;
+  }
+  return "low" as const;
 }
 
 export function detectMigrationPatterns(
@@ -726,7 +1117,8 @@ export function detectMigrationPatterns(
       return Boolean(
         hasReactNativePermissionsEvidence(result) &&
           result.hasIOS &&
-          hasPermissionsHandlerConfigurationIssue(result),
+          (hasPermissionsHandlerConfigurationIssue(result) ||
+            hasMigrationArea(result, "Permissions")),
       );
     }
 
@@ -756,6 +1148,34 @@ export function detectMigrationPatterns(
 
     if (pattern.id === "PATTERN-012") {
       return hasRn071AndroidGradleRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-013") {
+      return hasReactNativeVideoExoplayerRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-014") {
+      return hasLegacyAndroidAnnotationRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-015") {
+      return hasUnusedMlkitFlavorRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-016") {
+      return hasLegacySvgTransformerRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-017") {
+      return hasScreensAppCompatRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-018") {
+      return hasNativeUiComponentRegistrationRisk(result);
+    }
+
+    if (pattern.id === "PATTERN-019") {
+      return hasCircularBarrelImportRisk(result);
     }
 
     return false;
@@ -797,6 +1217,62 @@ export function detectMigrationPatterns(
         ...pattern,
         confidence: getRn071AndroidGradleConfidence(result),
         detectedSignals: buildRn071AndroidGradleSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-013") {
+      return {
+        ...pattern,
+        confidence: getDependencyVersion(result, "react-native-video") ? "high" : "medium",
+        detectedSignals: buildReactNativeVideoExoplayerSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-014") {
+      return {
+        ...pattern,
+        confidence: result.nativeVersions?.androidGradlePlugin ? "medium" : "low",
+        detectedSignals: buildLegacyAndroidAnnotationSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-015") {
+      return {
+        ...pattern,
+        confidence: getDependencyVersion(result, "react-native-camera") ? "high" : "medium",
+        detectedSignals: buildUnusedMlkitFlavorSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-016") {
+      return {
+        ...pattern,
+        confidence: result.hasMetroConfig ? "high" : "medium",
+        detectedSignals: buildLegacySvgTransformerSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-017") {
+      return {
+        ...pattern,
+        confidence: getDependencyVersion(result, "react-native-screens") ? "high" : "medium",
+        detectedSignals: buildScreensAppCompatSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-018") {
+      return {
+        ...pattern,
+        confidence: "high",
+        detectedSignals: buildNativeUiComponentRegistrationSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-019") {
+      return {
+        ...pattern,
+        confidence: getCircularBarrelConfidence(result),
+        detectedSignals: buildCircularBarrelImportSignals(result),
       };
     }
 
