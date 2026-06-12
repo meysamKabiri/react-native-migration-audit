@@ -1240,6 +1240,9 @@ program
       androidUsesProjectExtReact: false,
       androidUsesReactAndroidDependency: undefined as boolean | undefined,
       androidUsesFacebookReactPlugin: undefined as boolean | undefined,
+      androidMainApplicationContent: null as string | null,
+      androidUsesLegacySoLoaderInit: undefined as boolean | undefined,
+      androidUsesOpenSourceMergedSoMapping: undefined as boolean | undefined,
       lockfilePackageVersions: {} as Record<string, string[]>,
       hasGradleBuild: await fs.pathExists(androidBuildGradlePath),
       hasAppGradleBuild: await fs.pathExists(
@@ -1321,6 +1324,36 @@ program
     const gradleWrapper = await readFileIfExists(androidGradleWrapperPath);
     const podfile = await readFileIfExists(podfilePath);
     const yarnLock = await readFileIfExists(path.join(absolutePath, "yarn.lock"));
+
+    // Read MainApplication.java or MainApplication.kt for SoLoader detection
+    let mainApplicationContent: string | null = null;
+    if (result.hasAndroid) {
+      const javaDir = path.join(absolutePath, "android", "app", "src", "main", "java");
+      try {
+        const entries = await fs.readdir(javaDir, { recursive: true });
+        const mainAppFile = (entries as string[]).find(
+          (entry) =>
+            entry.endsWith("/MainApplication.java") ||
+            entry.endsWith("/MainApplication.kt"),
+        );
+        if (mainAppFile) {
+          mainApplicationContent = await readFileIfExists(
+            path.join(javaDir, mainAppFile),
+          );
+        }
+      } catch {
+        // Directory may not exist; leave mainApplicationContent as null
+      }
+    }
+    result.androidMainApplicationContent = mainApplicationContent;
+    result.androidUsesLegacySoLoaderInit = Boolean(
+      mainApplicationContent?.match(
+        /SoLoader\.init\s*\(\s*this\s*(?:,|\s*\))/
+      ),
+    );
+    result.androidUsesOpenSourceMergedSoMapping = Boolean(
+      mainApplicationContent?.includes("OpenSourceMergedSoMapping"),
+    );
     const setupPermissionsInfo = getSetupPermissionsInfo(podfile);
 
     const gradleVersionMatch = gradleWrapper?.match(/gradle-([\d.]+)-/);

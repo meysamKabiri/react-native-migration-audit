@@ -71,6 +71,9 @@ type MigrationPatternAuditFacts = {
     barrelFiles: string[];
     barrelDetails: { path: string; reexportCount: number }[];
   };
+  androidMainApplicationContent?: string | null;
+  androidUsesLegacySoLoaderInit?: boolean;
+  androidUsesOpenSourceMergedSoMapping?: boolean;
 };
 
 export const migrationPatterns: MigrationPattern[] = [
@@ -352,6 +355,22 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Avoid importing runtime-sensitive components from large barrel exports. Prefer direct imports for ActionBar, Table, modal components, BLE components, native UI wrappers, and runtime-sensitive screen dependencies. Investigate circular dependency chains involving index.ts/index.tsx barrels.",
+  },
+  {
+    id: "PATTERN-020",
+    title: "RN 0.76+ Android SoLoader Merged Native Library Mapping",
+    description:
+      "RN 0.76+ ReactAndroid merges multiple JNI native libraries (react_devsupportjni, reactnativejni, fabricjni, etc.) into a single libreactnative.so. SoLoader requires OpenSourceMergedSoMapping to resolve merged library names. Using SoLoader.init(this, false) without the mapping causes UnsatisfiedLinkError at startup.",
+    affectedVersions: ["React Native >=0.76", "Android projects upgraded from <0.76"],
+    detectionCriteria: [
+      "React Native version is 0.76 or newer.",
+      "Android project exists.",
+      "MainApplication.java or MainApplication.kt contains legacy SoLoader.init(this, false) or equivalent initialization without OpenSourceMergedSoMapping.",
+      "OpenSourceMergedSoMapping is not referenced in the project.",
+      "Known symptoms include UnsatisfiedLinkError: libreact_devsupportjni.so not found, app closes immediately after launch, and Android startup crash despite successful build.",
+    ],
+    recommendation:
+      "Update MainApplication.onCreate() to pass OpenSourceMergedSoMapping.INSTANCE to SoLoader.init(): replace SoLoader.init(this, false) with SoLoader.init(this, OpenSourceMergedSoMapping.INSTANCE). This registers the merged SO mapping so SoLoader can resolve names like react_devsupportjni, reactnativejni, fabricjni, turbomodulejsijni, uimanagerjni, mapbufferjni, reactnativeblob, rninstance, react_newarchdefaults, and yoga to libreactnative.so.",
   },
 ];
 
@@ -1065,6 +1084,83 @@ function getCircularBarrelConfidence(result: MigrationPatternAuditFacts) {
   return "low" as const;
 }
 
+function hasSoLoaderMergedLibRisk(result: MigrationPatternAuditFacts) {
+  if (!result.hasAndroid || !result.androidMainApplicationContent) return false;
+
+  const rnMinor = getMinor(
+    normalizeVersion(result.reactNativeSemver ?? result.reactNative),
+  );
+  const targetsRn76 =
+    rnMinor !== null && rnMinor >= 76;
+  const upgradeTargets76 = upgradePathMentionsAtLeast(result, 76);
+  if (!targetsRn76 && !upgradeTargets76) return false;
+
+  const hasLegacyInit = result.androidUsesLegacySoLoaderInit === true;
+  const hasMergedMapping = result.androidUsesOpenSourceMergedSoMapping === true;
+
+  return hasLegacyInit && !hasMergedMapping;
+}
+
+function buildSoLoaderMergedLibSignals(result: MigrationPatternAuditFacts) {
+  const signals: string[] = [];
+
+  const rnMinorRaw =
+    result.reactNativeSemver ?? result.reactNative;
+  signals.push(`React Native version: ${rnMinorRaw}.`);
+
+  if (result.hasAndroid) signals.push("Android platform detected.");
+
+  if (result.androidMainApplicationContent) {
+    signals.push("MainApplication.java/kt content was read successfully.");
+  }
+
+  if (result.androidUsesLegacySoLoaderInit) {
+    signals.push(
+      "Legacy SoLoader.init(this, false) or equivalent found without OpenSourceMergedSoMapping.",
+    );
+  }
+
+  if (result.androidUsesOpenSourceMergedSoMapping === false) {
+    signals.push("OpenSourceMergedSoMapping is not referenced in the project.");
+  }
+
+  const mergedLibraries = [
+    "react_devsupportjni",
+    "reactnativejni",
+    "fabricjni",
+    "turbomodulejsijni",
+    "uimanagerjni",
+    "mapbufferjni",
+    "reactnativeblob",
+    "rninstance",
+    "react_newarchdefaults",
+    "yoga",
+  ];
+  signals.push(
+    `Merged libraries that must be mapped: ${mergedLibraries.join(", ")}.`,
+  );
+
+  signals.push(
+    "Symptom to watch: UnsatisfiedLinkError at startup for libreact_devsupportjni.so.",
+  );
+
+  return signals;
+}
+
+function getSoLoaderMergedLibConfidence(result: MigrationPatternAuditFacts) {
+  if (
+    result.androidUsesLegacySoLoaderInit === true &&
+    result.androidUsesOpenSourceMergedSoMapping === false &&
+    result.androidMainApplicationContent
+  ) {
+    return "high" as const;
+  }
+  if (result.androidUsesLegacySoLoaderInit === true) {
+    return "medium" as const;
+  }
+  return "low" as const;
+}
+
 export function detectMigrationPatterns(
   result: MigrationPatternAuditFacts,
 ): MigrationPattern[] {
@@ -1178,6 +1274,10 @@ export function detectMigrationPatterns(
       return hasCircularBarrelImportRisk(result);
     }
 
+    if (pattern.id === "PATTERN-020") {
+      return hasSoLoaderMergedLibRisk(result);
+    }
+
     return false;
   }).map((pattern) => {
     if (pattern.id === "PATTERN-008") {
@@ -1273,6 +1373,14 @@ export function detectMigrationPatterns(
         ...pattern,
         confidence: getCircularBarrelConfidence(result),
         detectedSignals: buildCircularBarrelImportSignals(result),
+      };
+    }
+
+    if (pattern.id === "PATTERN-020") {
+      return {
+        ...pattern,
+        confidence: getSoLoaderMergedLibConfidence(result),
+        detectedSignals: buildSoLoaderMergedLibSignals(result),
       };
     }
 
