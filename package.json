@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "audit": "tsx src/index.ts",
+    "test": "tsx src/__tests__/migrationPatterns.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
