@@ -2,6 +2,13 @@ import type {
   MigrationPattern,
   MigrationPatternAuditFacts,
 } from "../models/MigrationPattern";
+import {
+  INFORMATIONAL,
+  MUST_FIX,
+  PLAN_LATER,
+  VALIDATE_DURING_MIGRATION,
+  type ActionPriority,
+} from "../models/ActionPriority";
 export type { MigrationPattern } from "../models/MigrationPattern";
 
 export const migrationPatterns: MigrationPattern[] = [
@@ -18,6 +25,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Use a supported Node version for the RN milestone or add explicit Metro compatibility handling such as NODE_OPTIONS=--openssl-legacy-provider where appropriate.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-002",
@@ -31,6 +39,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Audit all @react-navigation/* packages together and keep their major versions aligned with compatible gesture-handler and screens versions for the target RN milestone.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
   {
     id: "PATTERN-003",
@@ -45,6 +54,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Review tsconfig lib/types configuration before broad TypeScript fixes; keep RN globals and DOM types intentionally scoped for the migration milestone.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
   {
     id: "PATTERN-004",
@@ -58,6 +68,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Validate Android manifest merge after clipboard migration; if the package version is affected, use a narrow documented patch-package fix rather than broad dependency upgrades.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-005",
@@ -72,6 +83,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "During RN 0.68 iOS validation, watch for Boost pod install failures; prefer a narrow documented podspec URL/checksum patch if the upstream archive URL is stale.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-006",
@@ -86,6 +98,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Treat RCT-Folly failures as a scoped iOS toolchain compatibility risk; prefer target-specific Podfile build-setting fixes over broad iOS dependency upgrades.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-008",
@@ -101,6 +114,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify Podfile contains setup_permissions(...) with all handlers required by the application. Run pod install after changes, clear DerivedData when permission-handler configuration changes, and reinstall the app after permission-handler changes.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-007",
@@ -115,6 +129,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Align React Native tooling packages with the current RN milestone. Remove unnecessary newer tooling packages. Clear Metro and watchman cache after dependency alignment.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
   {
     id: "PATTERN-009",
@@ -133,6 +148,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Compare Podfile against the RN 0.71 template. Verify use_react_native! arguments and config access patterns.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-010",
@@ -148,6 +164,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify react-native-screens version against the target RN milestone. Use a compatible screens version before enabling new architecture features.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-011",
@@ -162,6 +179,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify Metro/Babel dependency alignment. Check hoisted lru-cache versions. Pin a compatible version only when necessary and validated.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
   {
     id: "PATTERN-012",
@@ -180,6 +198,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Compare Android configuration against the RN 0.71 template. Verify com.facebook.react plugin, react-android dependency usage, Hermes configuration, and Gradle/AGP compatibility.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-013",
@@ -196,6 +215,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify react-native-video compatibility with the target RN milestone. Check ExoPlayer integration and Android Gradle compatibility.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-014",
@@ -216,6 +236,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Inspect Android library build.gradle files for legacy annotation extraction tasks. Compare against modern Android Gradle templates.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-015",
@@ -231,6 +252,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Review react-native-camera flavors. Disable unused MLKit integrations only after verifying required camera features.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-016",
@@ -250,6 +272,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify react-native-svg-transformer compatibility with the target RN milestone. Review Metro SVG transformer configuration.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
   {
     id: "PATTERN-017",
@@ -266,6 +289,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify react-native-screens compatibility with the target RN version. Review Android theme and AppCompat dependencies.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-018",
@@ -285,6 +309,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Verify native module installation. Inspect Podfile and Android native registration. Confirm the native component exists in the upgraded dependency version and review autolinking compatibility.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-019",
@@ -299,6 +324,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Avoid importing runtime-sensitive components from large barrel exports. Prefer direct imports for ActionBar, Table, modal components, BLE components, native UI wrappers, and runtime-sensitive screen dependencies. Investigate circular dependency chains involving index.ts/index.tsx barrels.",
+    actionPriority: PLAN_LATER,
   },
   {
     id: "PATTERN-020",
@@ -318,6 +344,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Update MainApplication.onCreate() to pass OpenSourceMergedSoMapping.INSTANCE to SoLoader.init(): replace SoLoader.init(this, false) with SoLoader.init(this, OpenSourceMergedSoMapping.INSTANCE). This registers the merged SO mapping so SoLoader can resolve names like react_devsupportjni, reactnativejni, fabricjni, turbomodulejsijni, uimanagerjni, mapbufferjni, reactnativeblob, rninstance, react_newarchdefaults, and yoga to libreactnative.so.",
+    actionPriority: MUST_FIX,
   },
   {
     id: "PATTERN-022",
@@ -339,6 +366,7 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Inventory current video usage. Review callback and playback API compatibility. Build and validate Android media playback. Build and validate iOS media playback. Validate playback controls, progress events, load events, and error handling. Remove obsolete react-native-video patches. Consider migration to a current stable react-native-video release.",
+    actionPriority: VALIDATE_DURING_MIGRATION,
   },
 ];
 
@@ -1564,12 +1592,82 @@ export function renderMigrationPatternsMarkdown(patterns: MigrationPattern[]) {
 
 Detected Patterns
 
-| Pattern | Confidence | Description | Detected Signals | Recommendation |
-| --- | --- | --- | --- | --- |
+| Pattern | Confidence | Action Priority | Description | Detected Signals | Recommendation |
+| --- | --- | --- | --- | --- | --- |
 ${patterns
   .map(
     (pattern) =>
-      `| ${pattern.id}: ${pattern.title} | ${pattern.confidence ?? "medium"} | ${pattern.description} | ${pattern.detectedSignals?.join("<br>") ?? "Detected by static audit signals."} | ${pattern.recommendation} |`,
+      `| ${pattern.id}: ${pattern.title} | ${pattern.confidence ?? "medium"} | ${formatActionPriority(pattern.actionPriority)} | ${pattern.description} | ${pattern.detectedSignals?.join("<br>") ?? "Detected by static audit signals."} | ${pattern.recommendation} |`,
   )
   .join("\n")}`;
+}
+
+function getActionPriority(pattern: MigrationPattern): ActionPriority {
+  return pattern.actionPriority ?? INFORMATIONAL;
+}
+
+export function formatActionPriority(priority: ActionPriority | undefined) {
+  if (priority === MUST_FIX) return "Must Fix Before Migration";
+  if (priority === VALIDATE_DURING_MIGRATION) return "Validate During Migration";
+  if (priority === PLAN_LATER) return "Plan Later";
+  return "Informational";
+}
+
+function renderActionRegisterGroup(
+  patterns: MigrationPattern[],
+  priority: ActionPriority,
+) {
+  const matches = patterns.filter((pattern) => getActionPriority(pattern) === priority);
+  if (!matches.length) return "- None detected.";
+
+  return matches
+    .map(
+      (pattern) =>
+        `- ${pattern.id}: ${pattern.title} (${pattern.confidence ?? "medium"} confidence) - ${pattern.recommendation}`,
+    )
+    .join("\n");
+}
+
+export function renderActionRegisterMarkdown(patterns: MigrationPattern[]) {
+  if (!patterns.length) return "";
+
+  return `## Action Register
+
+### Must Fix Before Migration
+
+${renderActionRegisterGroup(patterns, MUST_FIX)}
+
+### Validate During Migration
+
+${renderActionRegisterGroup(patterns, VALIDATE_DURING_MIGRATION)}
+
+### Plan Later
+
+${renderActionRegisterGroup(patterns, PLAN_LATER)}
+
+### Informational
+
+${renderActionRegisterGroup(patterns, INFORMATIONAL)}`;
+}
+
+export function renderActionRegisterSummaryMarkdown(patterns: MigrationPattern[]) {
+  if (!patterns.length) return "";
+
+  return `## Action Register
+
+### Must Fix Before Migration
+
+${renderActionRegisterGroup(patterns, MUST_FIX)}
+
+### Validate During Migration
+
+${renderActionRegisterGroup(patterns, VALIDATE_DURING_MIGRATION)}
+
+### Plan Later
+
+${renderActionRegisterGroup(patterns, PLAN_LATER)}
+
+### Informational
+
+${renderActionRegisterGroup(patterns, INFORMATIONAL)}`;
 }

@@ -28,6 +28,7 @@ import { generateUpgradeExecutionPlan } from "./core/generateUpgradeExecutionPla
 import { generateBaselineReadiness } from "./core/generateBaselineReadiness";
 import {
   detectMigrationPatterns,
+  renderActionRegisterMarkdown,
   renderMigrationPatternsMarkdown,
 } from "./knowledge/migrationPatterns";
 import type { BaselineReadiness } from "./models/BaselineReadiness";
@@ -1698,6 +1699,9 @@ program
       result.baselineReadiness,
     );
     result.knownMigrationPatterns = detectMigrationPatterns(result);
+    const actionRegisterSection = renderActionRegisterMarkdown(
+      result.knownMigrationPatterns,
+    );
     const knownMigrationPatternsSection = renderMigrationPatternsMarkdown(
       result.knownMigrationPatterns,
     );
@@ -1787,6 +1791,8 @@ ${
         .join("\n\n")
     : "No known risky dependencies detected."
 }
+
+${actionRegisterSection}
 
 ${knownMigrationPatternsSection}
 

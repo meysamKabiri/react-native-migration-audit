@@ -1,3 +1,4 @@
+import type { ActionPriority } from "./ActionPriority";
 import type { RiskyDependency } from "./Risk";
 import type { MigrationArea } from "./MigrationArea";
 
@@ -10,6 +11,7 @@ export type MigrationPattern = {
   recommendation: string;
   confidence?: "low" | "medium" | "high";
   detectedSignals?: string[];
+  actionPriority?: ActionPriority;
 };
 
 export type MigrationPatternAuditFacts = {

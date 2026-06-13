@@ -1,4 +1,5 @@
 import { generateReactNativeUpgradePath } from "../rules/rnVersionRules";
+import { renderActionRegisterSummaryMarkdown } from "../knowledge/migrationPatterns";
 import type { MigrationPattern } from "../models/MigrationPattern";
 import type { BaselineReadiness } from "../models/BaselineReadiness";
 import type { MigrationArea } from "../models/MigrationArea";
@@ -428,6 +429,9 @@ ${list(
 export function generateUpgradeExecutionPlan(result: AuditResultLike): string {
   const validationCommands = getValidationCommands(result);
   const knownMigrationRisksSection = renderKnownMigrationRisks(result);
+  const actionRegisterSection = renderActionRegisterSummaryMarkdown(
+    result.knownMigrationPatterns ?? [],
+  );
 
   return `# Upgrade Execution Plan
 
@@ -438,6 +442,8 @@ Project: ${result.projectName}
 This plan is for controlled upgrade execution only. Do not execute upgrades automatically, do not modify audited app repositories from the audit tool, and do not combine feature work with migration work.
 
 ${renderMilestoneSummary(result)}
+
+${actionRegisterSection}
 
 ${knownMigrationRisksSection}
 
