@@ -11,6 +11,78 @@ import {
 } from "../models/ActionPriority";
 export type { MigrationPattern } from "../models/MigrationPattern";
 
+const GROUP_METRO = {
+  id: "metro-runtime",
+  title: "Metro / Runtime Tooling",
+  description: "Metro, Babel, bundling, and runtime module-resolution risks.",
+};
+
+const GROUP_NAVIGATION = {
+  id: "navigation",
+  title: "Navigation",
+  description: "React Navigation and native navigation-adjacent compatibility risks.",
+};
+
+const GROUP_TYPESCRIPT = {
+  id: "typescript",
+  title: "TypeScript",
+  description: "TypeScript and type compatibility risks.",
+};
+
+const GROUP_CLIPBOARD = {
+  id: "clipboard",
+  title: "Clipboard",
+  description: "Clipboard migration and native package integration risks.",
+};
+
+const GROUP_RN068_IOS = {
+  id: "rn-068-ios",
+  title: "RN 0.68 iOS",
+  description: "RN 0.68 iOS pod install and native toolchain risks.",
+};
+
+const GROUP_PERMISSIONS = {
+  id: "permissions",
+  title: "Permissions",
+  description: "Runtime permission handler and platform configuration risks.",
+};
+
+const GROUP_PODFILE = {
+  id: "podfile",
+  title: "iOS Podfile",
+  description: "Podfile template and CocoaPods migration risks.",
+};
+
+const GROUP_ANDROID_GRADLE = {
+  id: "android-gradle",
+  title: "Android Gradle / Native Build",
+  description: "Android Gradle template, native library, and build compatibility risks.",
+};
+
+const GROUP_VIDEO = {
+  id: "video",
+  title: "Video Playback",
+  description: "react-native-video modernization, Android build, and playback validation risks.",
+};
+
+const GROUP_CAMERA = {
+  id: "camera",
+  title: "Camera",
+  description: "Camera package and native dependency migration risks.",
+};
+
+const GROUP_NATIVE_UI = {
+  id: "native-ui",
+  title: "Native UI Components",
+  description: "Native UI component registration and autolinking risks.",
+};
+
+const GROUP_BARRELS = {
+  id: "barrels",
+  title: "Barrel Imports",
+  description: "Barrel export and runtime circular dependency risk indicators.",
+};
+
 export const migrationPatterns: MigrationPattern[] = [
   {
     id: "PATTERN-001",
@@ -26,6 +98,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Use a supported Node version for the RN milestone or add explicit Metro compatibility handling such as NODE_OPTIONS=--openssl-legacy-provider where appropriate.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_METRO,
+    evidenceTypes: ["config", "heuristic"],
   },
   {
     id: "PATTERN-002",
@@ -33,13 +107,15 @@ export const migrationPatterns: MigrationPattern[] = [
     description:
       "React Navigation upgrades can fail when packages from different major versions are mixed, commonly surfacing as headerMode errors or navigation typing mismatches.",
     detectionCriteria: [
-      "React Navigation package usage is detected.",
-      "Navigation-adjacent native packages such as gesture-handler or screens are present.",
+      "Multiple React Navigation packages are detected.",
+      "Detected @react-navigation/* packages use different major version families, or legacy react-navigation is mixed with scoped @react-navigation/* packages.",
       "Known symptoms include headerMode errors and navigation typing mismatch.",
     ],
     recommendation:
       "Audit all @react-navigation/* packages together and keep their major versions aligned with compatible gesture-handler and screens versions for the target RN milestone.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_NAVIGATION,
+    evidenceTypes: ["dependency", "source"],
   },
   {
     id: "PATTERN-003",
@@ -55,6 +131,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Review tsconfig lib/types configuration before broad TypeScript fixes; keep RN globals and DOM types intentionally scoped for the migration milestone.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_TYPESCRIPT,
+    evidenceTypes: ["dependency", "heuristic"],
   },
   {
     id: "PATTERN-004",
@@ -69,6 +147,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Validate Android manifest merge after clipboard migration; if the package version is affected, use a narrow documented patch-package fix rather than broad dependency upgrades.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_CLIPBOARD,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
   {
     id: "PATTERN-005",
@@ -84,6 +164,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "During RN 0.68 iOS validation, watch for Boost pod install failures; prefer a narrow documented podspec URL/checksum patch if the upstream archive URL is stale.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_RN068_IOS,
+    evidenceTypes: ["config", "heuristic"],
   },
   {
     id: "PATTERN-006",
@@ -99,6 +181,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Treat RCT-Folly failures as a scoped iOS toolchain compatibility risk; prefer target-specific Podfile build-setting fixes over broad iOS dependency upgrades.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_RN068_IOS,
+    evidenceTypes: ["config", "heuristic"],
   },
   {
     id: "PATTERN-008",
@@ -115,6 +199,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify Podfile contains setup_permissions(...) with all handlers required by the application. Run pod install after changes, clear DerivedData when permission-handler configuration changes, and reinstall the app after permission-handler changes.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_PERMISSIONS,
+    evidenceTypes: ["dependency", "source", "config"],
   },
   {
     id: "PATTERN-007",
@@ -130,6 +216,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Align React Native tooling packages with the current RN milestone. Remove unnecessary newer tooling packages. Clear Metro and watchman cache after dependency alignment.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_METRO,
+    evidenceTypes: ["dependency", "heuristic"],
   },
   {
     id: "PATTERN-009",
@@ -149,6 +237,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Compare Podfile against the RN 0.71 template. Verify use_react_native! arguments and config access patterns.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_PODFILE,
+    evidenceTypes: ["config", "heuristic"],
   },
   {
     id: "PATTERN-010",
@@ -165,6 +255,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify react-native-screens version against the target RN milestone. Use a compatible screens version before enabling new architecture features.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_NAVIGATION,
+    evidenceTypes: ["dependency"],
   },
   {
     id: "PATTERN-011",
@@ -180,6 +272,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify Metro/Babel dependency alignment. Check hoisted lru-cache versions. Pin a compatible version only when necessary and validated.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_METRO,
+    evidenceTypes: ["dependency", "lockfile", "config"],
   },
   {
     id: "PATTERN-012",
@@ -199,6 +293,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Compare Android configuration against the RN 0.71 template. Verify com.facebook.react plugin, react-android dependency usage, Hermes configuration, and Gradle/AGP compatibility.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_ANDROID_GRADLE,
+    evidenceTypes: ["config", "heuristic"],
   },
   {
     id: "PATTERN-013",
@@ -216,6 +312,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify react-native-video compatibility with the target RN milestone. Check ExoPlayer integration and Android Gradle compatibility.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_VIDEO,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
   {
     id: "PATTERN-014",
@@ -237,6 +335,9 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Inspect Android library build.gradle files for legacy annotation extraction tasks. Compare against modern Android Gradle templates.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_ANDROID_GRADLE,
+    relatedPatternGroups: [GROUP_VIDEO],
+    evidenceTypes: ["dependency", "config", "heuristic"],
   },
   {
     id: "PATTERN-015",
@@ -253,6 +354,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Review react-native-camera flavors. Disable unused MLKit integrations only after verifying required camera features.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_CAMERA,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
   {
     id: "PATTERN-016",
@@ -273,6 +376,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify react-native-svg-transformer compatibility with the target RN milestone. Review Metro SVG transformer configuration.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_METRO,
+    evidenceTypes: ["dependency", "source", "config"],
   },
   {
     id: "PATTERN-017",
@@ -290,6 +395,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify react-native-screens compatibility with the target RN version. Review Android theme and AppCompat dependencies.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_NAVIGATION,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
   {
     id: "PATTERN-018",
@@ -310,6 +417,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Verify native module installation. Inspect Podfile and Android native registration. Confirm the native component exists in the upgraded dependency version and review autolinking compatibility.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_NATIVE_UI,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
   {
     id: "PATTERN-019",
@@ -325,6 +434,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Avoid importing runtime-sensitive components from large barrel exports. Prefer direct imports for ActionBar, Table, modal components, BLE components, native UI wrappers, and runtime-sensitive screen dependencies. Investigate circular dependency chains involving index.ts/index.tsx barrels.",
     actionPriority: PLAN_LATER,
+    patternGroup: GROUP_BARRELS,
+    evidenceTypes: ["source", "heuristic"],
   },
   {
     id: "PATTERN-020",
@@ -345,6 +456,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Update MainApplication.onCreate() to pass OpenSourceMergedSoMapping.INSTANCE to SoLoader.init(): replace SoLoader.init(this, false) with SoLoader.init(this, OpenSourceMergedSoMapping.INSTANCE). This registers the merged SO mapping so SoLoader can resolve names like react_devsupportjni, reactnativejni, fabricjni, turbomodulejsijni, uimanagerjni, mapbufferjni, reactnativeblob, rninstance, react_newarchdefaults, and yoga to libreactnative.so.",
     actionPriority: MUST_FIX,
+    patternGroup: GROUP_ANDROID_GRADLE,
+    evidenceTypes: ["source", "config"],
   },
   {
     id: "PATTERN-022",
@@ -367,6 +480,8 @@ export const migrationPatterns: MigrationPattern[] = [
     recommendation:
       "Inventory current video usage. Review callback and playback API compatibility. Build and validate Android media playback. Build and validate iOS media playback. Validate playback controls, progress events, load events, and error handling. Remove obsolete react-native-video patches. Consider migration to a current stable react-native-video release.",
     actionPriority: VALIDATE_DURING_MIGRATION,
+    patternGroup: GROUP_VIDEO,
+    evidenceTypes: ["dependency", "source", "heuristic"],
   },
 ];
 
@@ -489,17 +604,6 @@ function hasDependencyEvidence(
   return Boolean(
     getDependencyVersion(result, packageName) ||
     hasPackageUsage(result, packageName),
-  );
-}
-
-function hasRiskyDependency(
-  result: MigrationPatternAuditFacts,
-  packageName: string,
-) {
-  return (
-    result.riskyDependencies?.some(
-      (dependency) => dependency.name === packageName,
-    ) ?? false
   );
 }
 
@@ -816,19 +920,137 @@ function getRn071AndroidGradleConfidence(result: MigrationPatternAuditFacts) {
   return isAndroidGradlePluginOlderThan(result, "7.3.0") ? "medium" : "low";
 }
 
-function hasNavigationEvidence(result: MigrationPatternAuditFacts) {
-  const knownNavigationPackages = [
-    "@react-navigation/native",
-    "@react-navigation/stack",
-    "@react-navigation/bottom-tabs",
-    "react-navigation",
-  ];
+const knownReactNavigationPackages = [
+  "@react-navigation/native",
+  "@react-navigation/stack",
+  "@react-navigation/bottom-tabs",
+  "@react-navigation/drawer",
+  "@react-navigation/material-bottom-tabs",
+  "@react-navigation/material-top-tabs",
+  "@react-navigation/native-stack",
+  "react-navigation",
+];
 
-  return knownNavigationPackages.some(
+function hasNavigationEvidence(result: MigrationPatternAuditFacts) {
+  return knownReactNavigationPackages.some(
     (packageName) =>
       hasDependency(result, packageName) ||
       hasPackageUsage(result, packageName),
   );
+}
+
+function getReactNavigationVersionEntries(result: MigrationPatternAuditFacts) {
+  return knownReactNavigationPackages
+    .map((packageName) => ({
+      packageName,
+      version: getDependencyVersion(result, packageName),
+    }))
+    .filter((entry): entry is { packageName: string; version: string } =>
+      Boolean(entry.version),
+    );
+}
+
+function hasReactNavigationVersionFamilyMismatch(
+  result: MigrationPatternAuditFacts,
+) {
+  const entries = getReactNavigationVersionEntries(result);
+  const hasLegacyPackage = entries.some(
+    (entry) => entry.packageName === "react-navigation",
+  );
+  const scopedEntries = entries.filter((entry) =>
+    entry.packageName.startsWith("@react-navigation/"),
+  );
+
+  if (hasLegacyPackage && scopedEntries.length > 0) return true;
+
+  const scopedMajors = new Set(
+    scopedEntries
+      .map((entry) => getMajor(normalizeVersion(entry.version)))
+      .filter((major): major is number => major !== null),
+  );
+
+  return scopedMajors.size > 1;
+}
+
+function buildReactNavigationMismatchSignals(
+  result: MigrationPatternAuditFacts,
+) {
+  const entries = getReactNavigationVersionEntries(result);
+  const signals: string[] = [];
+
+  if (entries.length) {
+    signals.push(
+      `React Navigation package versions: ${entries
+        .map((entry) => `${entry.packageName}@${entry.version}`)
+        .join(", ")}.`,
+    );
+  }
+
+  const scopedEntries = entries.filter((entry) =>
+    entry.packageName.startsWith("@react-navigation/"),
+  );
+  const scopedMajorGroups = new Map<number, string[]>();
+
+  for (const entry of scopedEntries) {
+    const major = getMajor(normalizeVersion(entry.version));
+    if (major === null) continue;
+    scopedMajorGroups.set(major, [
+      ...(scopedMajorGroups.get(major) ?? []),
+      entry.packageName,
+    ]);
+  }
+
+  if (scopedMajorGroups.size > 1) {
+    signals.push(
+      `Mixed @react-navigation major families: ${Array.from(scopedMajorGroups.entries())
+        .map(([major, packages]) => `v${major} (${packages.join(", ")})`)
+        .join("; ")}.`,
+    );
+  }
+
+  if (
+    entries.some((entry) => entry.packageName === "react-navigation") &&
+    scopedEntries.length > 0
+  ) {
+    signals.push(
+      "Legacy react-navigation package is installed alongside scoped @react-navigation packages.",
+    );
+  }
+
+  if (hasDependency(result, "react-native-gesture-handler")) {
+    signals.push(
+      `react-native-gesture-handler version detected: ${getDependencyVersion(result, "react-native-gesture-handler")}.`,
+    );
+  }
+
+  if (hasDependency(result, "react-native-screens")) {
+    signals.push(
+      `react-native-screens version detected: ${getDependencyVersion(result, "react-native-screens")}.`,
+    );
+  }
+
+  return signals;
+}
+
+function getReactNavigationMismatchConfidence(
+  result: MigrationPatternAuditFacts,
+) {
+  const entries = getReactNavigationVersionEntries(result);
+  const hasLegacyPackage = entries.some(
+    (entry) => entry.packageName === "react-navigation",
+  );
+  const scopedEntries = entries.filter((entry) =>
+    entry.packageName.startsWith("@react-navigation/"),
+  );
+  const scopedMajors = new Set(
+    scopedEntries
+      .map((entry) => getMajor(normalizeVersion(entry.version)))
+      .filter((major): major is number => major !== null),
+  );
+
+  if (scopedMajors.size > 1) return "high" as const;
+  if (hasLegacyPackage && scopedEntries.length > 0) return "medium" as const;
+  return "low" as const;
 }
 
 const toolingVersionSkewPackages = [
@@ -1118,7 +1340,23 @@ function buildCircularBarrelImportSignals(result: MigrationPatternAuditFacts) {
 
   if (result.barrelAnalysis?.hasLargeBarrels) {
     signals.push(
-      "Large barrel files found — any of these may introduce circular dependency chains when imported by screens.",
+      "Large barrel files found; this is a heuristic risk until screen imports or cycle evidence confirm the runtime path.",
+    );
+  }
+
+  if (result.barrelAnalysis?.screenImportsFromBarrels) {
+    signals.push(
+      "Screen imports from large barrels are detected, increasing circular dependency risk confidence.",
+    );
+  }
+
+  if (result.barrelAnalysis?.confirmedCycles) {
+    signals.push(
+      "Confirmed circular dependency evidence is present for one or more barrel import paths.",
+    );
+  } else {
+    signals.push(
+      "Confirmed circular dependency chains are not currently produced by this scanner; validate suspicious screen imports manually.",
     );
   }
 
@@ -1155,12 +1393,16 @@ function buildCircularBarrelImportSignals(result: MigrationPatternAuditFacts) {
 
 function getCircularBarrelConfidence(result: MigrationPatternAuditFacts) {
   const areaCount = result.migrationAreas?.length ?? 0;
-  if (result.barrelAnalysis?.hasLargeBarrels && areaCount >= 3) {
+  if (result.barrelAnalysis?.confirmedCycles) {
     return "high" as const;
   }
-  if (result.barrelAnalysis?.hasLargeBarrels) {
+  if (
+    result.barrelAnalysis?.hasLargeBarrels &&
+    (result.barrelAnalysis.screenImportsFromBarrels || areaCount >= 3)
+  ) {
     return "medium" as const;
   }
+  if (result.barrelAnalysis?.hasLargeBarrels) return "low" as const;
   return "low" as const;
 }
 
@@ -1351,10 +1593,7 @@ export function detectMigrationPatterns(
       if (pattern.id === "PATTERN-002") {
         return (
           hasNavigationEvidence(result) &&
-          (hasRiskyDependency(result, "react-native-gesture-handler") ||
-            hasRiskyDependency(result, "react-native-screens") ||
-            hasDependency(result, "react-native-gesture-handler") ||
-            hasDependency(result, "react-native-screens"))
+          hasReactNavigationVersionFamilyMismatch(result)
         );
       }
 
@@ -1460,6 +1699,14 @@ export function detectMigrationPatterns(
       return false;
     })
     .map((pattern) => {
+      if (pattern.id === "PATTERN-002") {
+        return {
+          ...pattern,
+          confidence: getReactNavigationMismatchConfidence(result),
+          detectedSignals: buildReactNavigationMismatchSignals(result),
+        };
+      }
+
       if (pattern.id === "PATTERN-008") {
         return {
           ...pattern,
@@ -1590,16 +1837,106 @@ export function renderMigrationPatternsMarkdown(patterns: MigrationPattern[]) {
 
   return `## Known Migration Patterns
 
+${renderPatternGroupSummaryMarkdown(patterns)}
+
 Detected Patterns
 
-| Pattern | Confidence | Action Priority | Description | Detected Signals | Recommendation |
-| --- | --- | --- | --- | --- | --- |
+| Pattern | Group | Evidence | Confidence | Action Priority | Description | Detected Signals | Recommendation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 ${patterns
   .map(
     (pattern) =>
-      `| ${pattern.id}: ${pattern.title} | ${pattern.confidence ?? "medium"} | ${formatActionPriority(pattern.actionPriority)} | ${pattern.description} | ${pattern.detectedSignals?.join("<br>") ?? "Detected by static audit signals."} | ${pattern.recommendation} |`,
+      `| ${pattern.id}: ${pattern.title} | ${formatPatternGroups(pattern)} | ${formatEvidenceTypes(pattern)} | ${pattern.confidence ?? "medium"} | ${formatActionPriority(pattern.actionPriority)} | ${pattern.description} | ${pattern.detectedSignals?.join("<br>") ?? "Detected by static audit signals."} | ${pattern.recommendation} |`,
   )
   .join("\n")}`;
+}
+
+function formatPatternGroups(pattern: MigrationPattern) {
+  const groups = [
+    pattern.patternGroup?.title,
+    ...(pattern.relatedPatternGroups?.map((group) => `${group.title} (related)`) ?? []),
+  ].filter((group): group is string => Boolean(group));
+
+  return groups.length ? groups.join("<br>") : "Uncategorized";
+}
+
+function formatEvidenceTypes(pattern: MigrationPattern) {
+  return pattern.evidenceTypes?.length
+    ? pattern.evidenceTypes.join(", ")
+    : "heuristic";
+}
+
+function getPatternGroupEntries(patterns: MigrationPattern[]) {
+  const grouped = new Map<
+    string,
+    {
+      title: string;
+      description: string;
+      patterns: { pattern: MigrationPattern; related: boolean }[];
+    }
+  >();
+
+  for (const pattern of patterns) {
+    const groups = [
+      ...(pattern.patternGroup
+        ? [{ group: pattern.patternGroup, related: false }]
+        : [
+            {
+              group: {
+                id: "uncategorized",
+                title: "Uncategorized",
+                description: "Patterns without explicit grouping metadata.",
+              },
+              related: false,
+            },
+          ]),
+      ...(pattern.relatedPatternGroups?.map((group) => ({
+        group,
+        related: true,
+      })) ?? []),
+    ];
+
+    for (const { group, related } of groups) {
+      const entry = grouped.get(group.id) ?? {
+        title: group.title,
+        description: group.description,
+        patterns: [],
+      };
+
+      entry.patterns.push({ pattern, related });
+      grouped.set(group.id, entry);
+    }
+  }
+
+  return Array.from(grouped.values()).sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+}
+
+export function renderPatternGroupSummaryMarkdown(
+  patterns: MigrationPattern[],
+  headingLevel = 3,
+) {
+  if (!patterns.length) return "";
+  const heading = "#".repeat(headingLevel);
+  const childHeading = "#".repeat(headingLevel + 1);
+
+  return `${heading} Pattern Groups
+
+${getPatternGroupEntries(patterns)
+  .map(
+    (group) => `${childHeading} ${group.title}
+
+${group.description}
+
+${group.patterns
+  .map(
+    ({ pattern, related }) =>
+      `- ${pattern.id}: ${pattern.title}${related ? " (related signal)" : ""} (${pattern.confidence ?? "medium"} confidence, ${formatActionPriority(pattern.actionPriority)})`,
+  )
+  .join("\n")}`,
+  )
+  .join("\n\n")}`;
 }
 
 function getActionPriority(pattern: MigrationPattern): ActionPriority {

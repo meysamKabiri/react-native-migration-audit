@@ -12,7 +12,23 @@ export type MigrationPattern = {
   confidence?: "low" | "medium" | "high";
   detectedSignals?: string[];
   actionPriority?: ActionPriority;
+  patternGroup?: MigrationPatternGroup;
+  relatedPatternGroups?: MigrationPatternGroup[];
+  evidenceTypes?: MigrationPatternEvidenceType[];
 };
+
+export type MigrationPatternGroup = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export type MigrationPatternEvidenceType =
+  | "source"
+  | "config"
+  | "dependency"
+  | "lockfile"
+  | "heuristic";
 
 export type MigrationPatternAuditFacts = {
   reactNative?: string | null;
@@ -57,6 +73,8 @@ export type MigrationPatternAuditFacts = {
     barrelCount: number;
     barrelFiles: string[];
     barrelDetails: { path: string; reexportCount: number }[];
+    screenImportsFromBarrels?: boolean;
+    confirmedCycles?: boolean;
   };
   androidMainApplicationContent?: string | null;
   androidUsesLegacySoLoaderInit?: boolean;

@@ -70,26 +70,30 @@ function expectSignal(pattern: MigrationPattern, expectedText: string) {
   );
 }
 
-test("PATTERN-002 matches navigation evidence with gesture/screens dependency", () => {
+test("PATTERN-002 matches mixed React Navigation major families", () => {
   const pattern = expectPattern(
     facts({
       dependencyVersions: {
         "@react-navigation/native": "5.9.8",
+        "@react-navigation/stack": "6.3.20",
         "react-native-gesture-handler": "1.10.3",
       },
     }),
     "PATTERN-002",
   );
 
-  assert.equal(pattern.confidence ?? "medium", "medium");
+  assert.equal(pattern.confidence, "high");
   assert.equal(pattern.actionPriority, VALIDATE_DURING_MIGRATION);
+  expectSignal(pattern, "Mixed @react-navigation major families");
 });
 
-test("PATTERN-002 does not match navigation evidence without gesture/screens dependency", () => {
+test("PATTERN-002 does not match compatible navigation package family", () => {
   expectNoPattern(
     facts({
       dependencyVersions: {
         "@react-navigation/native": "5.9.8",
+        "@react-navigation/stack": "5.14.9",
+        "react-native-gesture-handler": "1.10.3",
       },
     }),
     "PATTERN-002",
@@ -182,10 +186,28 @@ test("PATTERN-019 matches large barrel analysis and reports signals", () => {
     "PATTERN-019",
   );
 
-  assert.equal(pattern.confidence, "high");
+  assert.equal(pattern.confidence, "medium");
   assert.equal(pattern.actionPriority, PLAN_LATER);
   expectSignal(pattern, "2 barrel file(s)");
   expectSignal(pattern, "Large barrel files found");
+  expectSignal(pattern, "Confirmed circular dependency chains are not currently produced");
+});
+
+test("PATTERN-019 reports low confidence for large barrel only", () => {
+  const pattern = expectPattern(
+    facts({
+      barrelAnalysis: {
+        hasLargeBarrels: true,
+        barrelCount: 1,
+        largestBarrelExportCount: 15,
+        barrelFiles: ["src/components/index.ts"],
+        barrelDetails: [{ path: "src/components/index.ts", reexportCount: 15 }],
+      },
+    }),
+    "PATTERN-019",
+  );
+
+  assert.equal(pattern.confidence, "low");
 });
 
 test("PATTERN-019 does not match when large barrels are absent", () => {

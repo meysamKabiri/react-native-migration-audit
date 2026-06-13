@@ -8,11 +8,22 @@ export type BarrelInfo = {
   barrelCount: number;
   largestBarrelExportCount: number;
   hasLargeBarrels: boolean;
+  screenImportsFromBarrels: boolean;
+  confirmedCycles: boolean;
   barrelDetails: {
     path: string;
     reexportCount: number;
   }[];
 };
+
+function isScreenLikeFile(relativePath: string) {
+  return /(^|\/)(screens?|pages?|routes?)(\/|$)/i.test(relativePath) ||
+    /Screen\.(js|jsx|ts|tsx)$/i.test(relativePath);
+}
+
+function stripSourceExtension(filePath: string) {
+  return filePath.replace(/\.(js|jsx|ts|tsx)$/, "");
+}
 
 export async function scanBarrels(projectPath: string): Promise<BarrelInfo> {
   const patterns = getSourceFilePatterns(projectPath);
@@ -65,12 +76,61 @@ export async function scanBarrels(projectPath: string): Promise<BarrelInfo> {
   const largestBarrelExportCount = counts.length ? Math.max(...counts) : 0;
   const barrelCount = barrelDetails.length;
   const hasLargeBarrels = largestBarrelExportCount >= 10;
+  const barrelDirs = new Set(
+    barrelDetails.map((barrel) =>
+      stripSourceExtension(path.dirname(barrel.path).replace(/\\/g, "/")),
+    ),
+  );
+  let screenImportsFromBarrels = false;
+
+  if (barrelDirs.size > 0) {
+    const sourceFiles = await fg(patterns, {
+      cwd: projectPath,
+      absolute: true,
+    });
+
+    for (const filePath of sourceFiles) {
+      const relativeFile = path.relative(projectPath, filePath).replace(/\\/g, "/");
+      if (!isScreenLikeFile(relativeFile)) continue;
+
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        const importSources = Array.from(
+          content.matchAll(/(?:import|export)\s+(?:[^'\"]*?\s+from\s+)?['\"]([^'\"]+)['\"]/g),
+        ).map((match) => match[1]);
+
+        for (const importSource of importSources) {
+          if (!importSource.startsWith(".")) continue;
+          const resolved = stripSourceExtension(
+            path
+              .relative(
+                projectPath,
+                path.resolve(path.dirname(filePath), importSource),
+              )
+              .replace(/\\/g, "/"),
+          );
+          const resolvedBarrelDir = resolved.replace(/\/index$/, "");
+
+          if (barrelDirs.has(resolvedBarrelDir)) {
+            screenImportsFromBarrels = true;
+            break;
+          }
+        }
+      } catch {
+        // skip unreadable files
+      }
+
+      if (screenImportsFromBarrels) break;
+    }
+  }
 
   return {
     barrelFiles: barrelDetails.map((b) => b.path),
     barrelCount,
     largestBarrelExportCount,
     hasLargeBarrels,
+    screenImportsFromBarrels,
+    confirmedCycles: false,
     barrelDetails,
   };
 }

@@ -1,5 +1,8 @@
 import { generateReactNativeUpgradePath } from "../rules/rnVersionRules";
-import { renderActionRegisterSummaryMarkdown } from "../knowledge/migrationPatterns";
+import {
+  renderActionRegisterSummaryMarkdown,
+  renderPatternGroupSummaryMarkdown,
+} from "../knowledge/migrationPatterns";
 import type { MigrationPattern } from "../models/MigrationPattern";
 import type { BaselineReadiness } from "../models/BaselineReadiness";
 import type { MigrationArea } from "../models/MigrationArea";
@@ -418,10 +421,14 @@ function renderKnownMigrationRisks(result: AuditResultLike) {
 
   return `### Known Migration Risks
 
+${renderPatternGroupSummaryMarkdown(patterns, 4)}
+
+#### Detected Risk Actions
+
 ${list(
     patterns.map(
       (pattern) =>
-        `${pattern.id}: ${pattern.title} - ${pattern.recommendation}`,
+        `${pattern.id}: ${pattern.title} (${pattern.patternGroup?.title ?? "Uncategorized"}, ${pattern.confidence ?? "medium"} confidence) - ${pattern.recommendation}`,
     ),
   )}`;
 }
