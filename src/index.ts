@@ -20,58 +20,26 @@ import {
 import {
   buildMigrationAreaEvidence,
   buildMigrationAreas,
-  type MigrationAreaEvidence,
 } from "./rules/migrationAreas";
 import { generateProposal, type Proposal } from "./core/generateProposal";
 import { generateMigrationTasks } from "./core/generateMigrationTasks";
 import { generateMigrationPlan } from "./core/generateMigrationPlan";
 import { generateUpgradeExecutionPlan } from "./core/generateUpgradeExecutionPlan";
-import {
-  generateBaselineReadiness,
-  type BaselineReadiness,
-} from "./core/generateBaselineReadiness";
+import { generateBaselineReadiness } from "./core/generateBaselineReadiness";
 import {
   detectMigrationPatterns,
   renderMigrationPatternsMarkdown,
-  type MigrationPattern,
 } from "./knowledge/migrationPatterns";
-type RiskCategory =
-  | "react-native"
-  | "android"
-  | "ios"
-  | "dependency"
-  | "scripts"
-  | "typescript"
-  | "expo"
-  | "project";
-
-type RiskSeverity = "critical" | "high" | "medium" | "low";
-
-type Risk = {
-  category: RiskCategory;
-  severity: RiskSeverity;
-  title: string;
-  description: string;
-};
-
-type Workflow =
-  | "expo-managed"
-  | "expo-bare-or-prebuild"
-  | "bare-react-native"
-  | "unknown";
-
-type UpgradeTask = {
-  id: string;
-  priority: "high" | "medium" | "low";
-  area: string;
-  title: string;
-  description: string;
-};
-type ComplexityScore = {
-  score: number;
-  classification: "low" | "moderate" | "significant" | "high" | "extreme";
-  drivers: string[];
-};
+import type { BaselineReadiness } from "./models/BaselineReadiness";
+import type { MigrationAreaEvidence } from "./models/MigrationArea";
+import type { MigrationPattern } from "./models/MigrationPattern";
+import type {
+  ComplexityScore,
+  UpgradeTask,
+  Workflow,
+} from "./models/AuditResult";
+import { AUDIT_SCHEMA_VERSION } from "./models/AuditResult";
+import type { Risk, RiskCategory, RiskSeverity, RiskyDependency } from "./models/Risk";
 
 const program = new Command();
 
@@ -1196,6 +1164,7 @@ program
     const lockfiles = await detectLockfiles(absolutePath);
 
     const result = {
+      schemaVersion: AUDIT_SCHEMA_VERSION,
       projectName: packageJson.name ?? "unknown",
       reactNative: reactNativeVersion.displayVersion,
       reactNativeRaw: reactNativeVersion.rawVersion,
@@ -1212,15 +1181,7 @@ program
       hasAndroid: await fs.pathExists(path.join(absolutePath, "android")),
       workflow: "unknown" as Workflow,
 
-      riskyDependencies: [] as {
-        name: string;
-        version: string;
-        reason: string;
-        category?: string;
-        risk?: string;
-        notes?: string[];
-        suggestedAction?: string;
-      }[],
+      riskyDependencies: [] as RiskyDependency[],
 
       risks: [] as Risk[],
       riskLevel: "low" as RiskSeverity,

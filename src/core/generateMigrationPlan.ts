@@ -1,24 +1,7 @@
-type Risk = {
-  category: string;
-  severity: "critical" | "high" | "medium" | "low";
-  title: string;
-  description: string;
-};
-
-type MigrationArea = {
-  area: string;
-  risk: "high" | "medium" | "low";
-  packages: string[];
-  reason: string;
-  suggestedAction: string;
-};
-
-type NativeModuleGroup = {
-  name: string;
-  platforms: ("android" | "ios")[];
-  files: string[];
-  severity: "critical" | "high" | "medium" | "low";
-};
+import type { MigrationArea } from "../models/MigrationArea";
+import type { Risk, RiskyDependency } from "../models/Risk";
+import type { BaselineReadiness } from "../models/BaselineReadiness";
+import type { NativeModuleGroup } from "../scanners/nativeModuleScanner";
 
 type AuditResultLike = {
   projectName: string;
@@ -36,19 +19,8 @@ type AuditResultLike = {
     target: string;
     note: string;
   };
-  baselineReadiness: {
-    status: "ready" | "warning" | "not-ready";
-    summary: string;
-    blockers: string[];
-    warnings: string[];
-    requiredActions: string[];
-  };
-  riskyDependencies: {
-    name: string;
-    version: string;
-    risk?: string;
-    suggestedAction?: string;
-  }[];
+  baselineReadiness: BaselineReadiness;
+  riskyDependencies: RiskyDependency[];
   migrationAreas: MigrationArea[];
   nativeModuleGroups: NativeModuleGroup[];
   nativeModuleFindings: unknown[];

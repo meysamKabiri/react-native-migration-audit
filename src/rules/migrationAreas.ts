@@ -3,26 +3,11 @@ import {
   packageHasToken,
   packageHasTokenSequence,
 } from "./packageCategories";
-
-export type MigrationArea = {
-  area: string;
-  risk: "high" | "medium" | "low";
-  packages: string[];
-  reason: string;
-  suggestedAction: string;
-};
-
-export type MigrationAreaEvidenceSource =
-  | "ast"
-  | "dependency"
-  | "native-module"
-  | "mixed";
-
-export type MigrationAreaEvidence = {
-  area: string;
-  source: MigrationAreaEvidenceSource;
-  evidence: string[];
-};
+import type {
+  MigrationArea,
+  MigrationAreaEvidence,
+  MigrationAreaEvidenceSource,
+} from "../models/MigrationArea";
 
 type PackageUsageLike = {
   packageName: string;

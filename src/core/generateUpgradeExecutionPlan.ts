@@ -1,34 +1,9 @@
 import { generateReactNativeUpgradePath } from "../rules/rnVersionRules";
-import type { MigrationPattern } from "../knowledge/migrationPatterns";
-
-type BaselineReadiness = {
-  status: "ready" | "warning" | "not-ready";
-  summary: string;
-  blockers: string[];
-  warnings: string[];
-  requiredActions: string[];
-};
-
-type RiskyDependency = {
-  name: string;
-  version: string;
-  risk?: string;
-  suggestedAction?: string;
-};
-
-type MigrationArea = {
-  area: string;
-  risk: "high" | "medium" | "low";
-  packages: string[];
-  suggestedAction?: string;
-};
-
-type NativeModuleGroup = {
-  name: string;
-  platforms: ("android" | "ios")[];
-  files: string[];
-  severity: "critical" | "high" | "medium" | "low";
-};
+import type { MigrationPattern } from "../models/MigrationPattern";
+import type { BaselineReadiness } from "../models/BaselineReadiness";
+import type { MigrationArea } from "../models/MigrationArea";
+import type { RiskyDependency } from "../models/Risk";
+import type { NativeModuleGroup } from "../scanners/nativeModuleScanner";
 
 export type AuditResultLike = {
   projectName: string;

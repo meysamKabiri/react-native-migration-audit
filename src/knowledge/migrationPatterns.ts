@@ -1,80 +1,8 @@
-export type MigrationPattern = {
-  id: string;
-  title: string;
-  description: string;
-  affectedVersions?: string[];
-  detectionCriteria: string[];
-  recommendation: string;
-  confidence?: "low" | "medium" | "high";
-  detectedSignals?: string[];
-};
-
-type RiskyDependencyLike = {
-  name: string;
-  version?: string;
-};
-
-type DeprecatedApiFindingLike = {
-  api: string;
-};
-
-type AstPackageUsageLike = {
-  packageName: string;
-};
-
-type MigrationAreaLike = {
-  area: string;
-  packages?: string[];
-};
-
-type MigrationPatternAuditFacts = {
-  reactNative?: string | null;
-  reactNativeSemver?: string | null;
-  upgradeRecommendation?: {
-    target?: string;
-  };
-  hasIOS?: boolean;
-  hasAndroid?: boolean;
-  hasPodfile?: boolean;
-  hasGradleBuild?: boolean;
-  hasAppGradleBuild?: boolean;
-  hasMetroConfig?: boolean;
-  hasBabelConfig?: boolean;
-  hasSetupPermissions?: boolean;
-  setupPermissionsHandlers?: string[];
-  setupPermissionsHandlersIdentified?: boolean;
-  setupPermissionsIsEmpty?: boolean;
-  podfileUsesLegacyReactNativePathConfig?: boolean;
-  androidUsesLegacyReactGradleApply?: boolean;
-  androidUsesLegacyReactNativeDependency?: boolean;
-  androidUsesProjectExtReact?: boolean;
-  androidUsesReactAndroidDependency?: boolean;
-  androidUsesFacebookReactPlugin?: boolean;
-  lockfilePackageVersions?: Record<string, string[]>;
-  typescript?: string | null;
-  scripts?: Record<string, string>;
-  dependencyVersions?: Record<string, string>;
-  riskyDependencies?: RiskyDependencyLike[];
-  deprecatedApiFindings?: DeprecatedApiFindingLike[];
-  astScan?: {
-    packageUsages?: AstPackageUsageLike[];
-  };
-  migrationAreas?: MigrationAreaLike[];
-  nativeVersions?: {
-    androidGradlePlugin?: string | null;
-    gradle?: string | null;
-  };
-  barrelAnalysis?: {
-    hasLargeBarrels: boolean;
-    largestBarrelExportCount: number;
-    barrelCount: number;
-    barrelFiles: string[];
-    barrelDetails: { path: string; reexportCount: number }[];
-  };
-  androidMainApplicationContent?: string | null;
-  androidUsesLegacySoLoaderInit?: boolean;
-  androidUsesOpenSourceMergedSoMapping?: boolean;
-};
+import type {
+  MigrationPattern,
+  MigrationPatternAuditFacts,
+} from "../models/MigrationPattern";
+export type { MigrationPattern } from "../models/MigrationPattern";
 
 export const migrationPatterns: MigrationPattern[] = [
   {
@@ -193,12 +121,15 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "RN 0.71 Podfile Configuration Shape Change",
     description:
       "RN 0.71 changes Podfile configuration expectations and older Podfile implementations may fail during pod install.",
-    affectedVersions: ["React Native 0.71.x", "iOS projects upgraded from <0.71"],
+    affectedVersions: [
+      "React Native 0.71.x",
+      "iOS projects upgraded from <0.71",
+    ],
     detectionCriteria: [
       "RN upgrade target includes 0.71 or newer.",
       "iOS project and Podfile are present.",
-      "Legacy Podfile config access patterns such as config[\"reactNativePath\"] are detected, or an older RN Podfile is being carried into the 0.71 milestone.",
-      "Known symptoms include config[\"reactNativePath\"] is nil, pod install failure, and use_react_native! configuration failure.",
+      'Legacy Podfile config access patterns such as config["reactNativePath"] are detected, or an older RN Podfile is being carried into the 0.71 milestone.',
+      'Known symptoms include config["reactNativePath"] is nil, pod install failure, and use_react_native! configuration failure.',
     ],
     recommendation:
       "Compare Podfile against the RN 0.71 template. Verify use_react_native! arguments and config access patterns.",
@@ -237,7 +168,10 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "React Native 0.71 Android Gradle Migration",
     description:
       "RN 0.71 introduces Android Gradle structure changes that can break existing projects.",
-    affectedVersions: ["React Native >=0.71", "Android projects upgraded from <0.71"],
+    affectedVersions: [
+      "React Native >=0.71",
+      "Android projects upgraded from <0.71",
+    ],
     detectionCriteria: [
       "RN upgrade target includes 0.71 or newer.",
       "Android project is present.",
@@ -268,7 +202,11 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "Legacy Android Annotation Processor / Typedef Extraction Issue",
     description:
       "Android compilation can fail because older libraries rely on deprecated annotation extraction or typedef generation mechanisms removed in newer Android Gradle tooling.",
-    affectedVersions: ["React Native >=0.71", "Modern Android Gradle Plugin", "legacy Android native libraries"],
+    affectedVersions: [
+      "React Native >=0.71",
+      "Modern Android Gradle Plugin",
+      "legacy Android native libraries",
+    ],
     detectionCriteria: [
       "Android project is present.",
       "RN version or upgrade target is 0.71 or newer.",
@@ -299,7 +237,10 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "Legacy SVG Transformer Metro Compatibility Issue",
     description:
       "Metro can start but bundling or runtime can fail because an older react-native-svg-transformer implementation is incompatible with the upgraded Metro pipeline.",
-    affectedVersions: ["React Native >=0.71", "react-native-svg-transformer <1.0.0"],
+    affectedVersions: [
+      "React Native >=0.71",
+      "react-native-svg-transformer <1.0.0",
+    ],
     detectionCriteria: [
       "react-native-svg-transformer is present.",
       "SVG runtime dependencies or SVG-related package usage are detected.",
@@ -331,7 +272,10 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "Native UI Component Missing From UIManager",
     description:
       "An application can build successfully but crash at runtime because a native UI component is not registered in UIManager after a React Native upgrade.",
-    affectedVersions: ["React Native upgraded apps", "native UI component packages with weak autolinking support"],
+    affectedVersions: [
+      "React Native upgraded apps",
+      "native UI component packages with weak autolinking support",
+    ],
     detectionCriteria: [
       "Native UI dependency evidence is detected.",
       "iOS or Android native project is present.",
@@ -361,7 +305,10 @@ export const migrationPatterns: MigrationPattern[] = [
     title: "RN 0.76+ Android SoLoader Merged Native Library Mapping",
     description:
       "RN 0.76+ ReactAndroid merges multiple JNI native libraries (react_devsupportjni, reactnativejni, fabricjni, etc.) into a single libreactnative.so. SoLoader requires OpenSourceMergedSoMapping to resolve merged library names. Using SoLoader.init(this, false) without the mapping causes UnsatisfiedLinkError at startup.",
-    affectedVersions: ["React Native >=0.76", "Android projects upgraded from <0.76"],
+    affectedVersions: [
+      "React Native >=0.76",
+      "Android projects upgraded from <0.76",
+    ],
     detectionCriteria: [
       "React Native version is 0.76 or newer.",
       "Android project exists.",
@@ -371,6 +318,27 @@ export const migrationPatterns: MigrationPattern[] = [
     ],
     recommendation:
       "Update MainApplication.onCreate() to pass OpenSourceMergedSoMapping.INSTANCE to SoLoader.init(): replace SoLoader.init(this, false) with SoLoader.init(this, OpenSourceMergedSoMapping.INSTANCE). This registers the merged SO mapping so SoLoader can resolve names like react_devsupportjni, reactnativejni, fabricjni, turbomodulejsijni, uimanagerjni, mapbufferjni, reactnativeblob, rninstance, react_newarchdefaults, and yoga to libreactnative.so.",
+  },
+  {
+    id: "PATTERN-022",
+    title:
+      "react-native-video Pre-Release or Legacy Branch Modernization Recommended",
+
+    description:
+      "Project depends on an alpha, pre-release, or significantly outdated react-native-video version. While builds may still succeed, long-term compatibility, native integration stability, and future React Native upgrades may become increasingly difficult.",
+    affectedVersions: [
+      "react-native-video alpha releases",
+      "react-native-video beta releases",
+      "react-native-video versions significantly behind current stable releases",
+    ],
+    detectionCriteria: [
+      "High: version contains alpha, beta, or rc, or major version < 5.",
+      "Medium: major version = 5 stable and React Native >= 0.74.",
+      "Low: major version = 5 stable and React Native < 0.74.",
+      "Do NOT trigger when: react-native-video >= 6.x stable or package absent.",
+    ],
+    recommendation:
+      "Inventory current video usage. Review callback and playback API compatibility. Build and validate Android media playback. Build and validate iOS media playback. Validate playback controls, progress events, load events, and error handling. Remove obsolete react-native-video patches. Consider migration to a current stable react-native-video release.",
   },
 ];
 
@@ -410,7 +378,10 @@ function compareVersions(a: string | null | undefined, b: string) {
   return left.patch - right.patch;
 }
 
-function isReactNativeOlderThan(result: MigrationPatternAuditFacts, minor: number) {
+function isReactNativeOlderThan(
+  result: MigrationPatternAuditFacts,
+  minor: number,
+) {
   const detectedMinor = getMinor(
     normalizeVersion(result.reactNativeSemver ?? result.reactNative),
   );
@@ -420,11 +391,16 @@ function isReactNativeOlderThan(result: MigrationPatternAuditFacts, minor: numbe
 
 function isReactNativeMinor(result: MigrationPatternAuditFacts, minor: number) {
   return (
-    getMinor(normalizeVersion(result.reactNativeSemver ?? result.reactNative)) === minor
+    getMinor(
+      normalizeVersion(result.reactNativeSemver ?? result.reactNative),
+    ) === minor
   );
 }
 
-function upgradePathMentions(result: MigrationPatternAuditFacts, minor: number) {
+function upgradePathMentions(
+  result: MigrationPatternAuditFacts,
+  minor: number,
+) {
   return new RegExp(`0\\.${minor}(?:\\D|$)`).test(
     result.upgradeRecommendation?.target ?? "",
   );
@@ -458,7 +434,10 @@ function targetsReactNativeAtLeast(
   );
 }
 
-function hasDependency(result: MigrationPatternAuditFacts, packageName: string) {
+function hasDependency(
+  result: MigrationPatternAuditFacts,
+  packageName: string,
+) {
   return Boolean(result.dependencyVersions?.[packageName]);
 }
 
@@ -468,8 +447,9 @@ function getDependencyVersion(
 ) {
   return (
     result.dependencyVersions?.[packageName] ??
-    result.riskyDependencies?.find((dependency) => dependency.name === packageName)
-      ?.version ??
+    result.riskyDependencies?.find(
+      (dependency) => dependency.name === packageName,
+    )?.version ??
     null
   );
 }
@@ -479,21 +459,37 @@ function hasDependencyEvidence(
   packageName: string,
 ) {
   return Boolean(
-    getDependencyVersion(result, packageName) || hasPackageUsage(result, packageName),
+    getDependencyVersion(result, packageName) ||
+    hasPackageUsage(result, packageName),
   );
 }
 
-function hasRiskyDependency(result: MigrationPatternAuditFacts, packageName: string) {
-  return result.riskyDependencies?.some((dependency) => dependency.name === packageName) ?? false;
-}
-
-function hasPackageUsage(result: MigrationPatternAuditFacts, packageName: string) {
+function hasRiskyDependency(
+  result: MigrationPatternAuditFacts,
+  packageName: string,
+) {
   return (
-    result.astScan?.packageUsages?.some((usage) => usage.packageName === packageName) ?? false
+    result.riskyDependencies?.some(
+      (dependency) => dependency.name === packageName,
+    ) ?? false
   );
 }
 
-function hasMigrationArea(result: MigrationPatternAuditFacts, areaName: string) {
+function hasPackageUsage(
+  result: MigrationPatternAuditFacts,
+  packageName: string,
+) {
+  return (
+    result.astScan?.packageUsages?.some(
+      (usage) => usage.packageName === packageName,
+    ) ?? false
+  );
+}
+
+function hasMigrationArea(
+  result: MigrationPatternAuditFacts,
+  areaName: string,
+) {
   return (
     result.migrationAreas?.some(
       (area) => area.area.toLowerCase() === areaName.toLowerCase(),
@@ -512,12 +508,14 @@ function hasReactNativePermissionsEvidence(result: MigrationPatternAuditFacts) {
   );
 }
 
-function hasPermissionsHandlerConfigurationIssue(result: MigrationPatternAuditFacts) {
+function hasPermissionsHandlerConfigurationIssue(
+  result: MigrationPatternAuditFacts,
+) {
   return Boolean(
     !result.hasPodfile ||
-      !result.hasSetupPermissions ||
-      result.setupPermissionsIsEmpty ||
-      result.setupPermissionsHandlersIdentified === false,
+    !result.hasSetupPermissions ||
+    result.setupPermissionsIsEmpty ||
+    result.setupPermissionsHandlersIdentified === false,
   );
 }
 
@@ -564,10 +562,10 @@ function getPermissionsPatternConfidence(result: MigrationPatternAuditFacts) {
 function hasRn071PodfileConfigRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     targetsReactNativeAtLeast(result, 71) &&
-      result.hasIOS &&
-      result.hasPodfile &&
-      (result.podfileUsesLegacyReactNativePathConfig ||
-        isReactNativeOlderThan(result, 71)),
+    result.hasIOS &&
+    result.hasPodfile &&
+    (result.podfileUsesLegacyReactNativePathConfig ||
+      isReactNativeOlderThan(result, 71)),
   );
 }
 
@@ -582,7 +580,7 @@ function buildRn071PodfileSignals(result: MigrationPatternAuditFacts) {
   if (result.hasPodfile) signals.push("Podfile is present.");
 
   if (result.podfileUsesLegacyReactNativePathConfig) {
-    signals.push("Podfile uses legacy config[\"reactNativePath\"] access.");
+    signals.push('Podfile uses legacy config["reactNativePath"] access.');
   } else if (isReactNativeOlderThan(result, 71)) {
     signals.push(
       "Project is upgrading from a pre-0.71 RN baseline; verify Podfile config access against the RN 0.71 template.",
@@ -600,13 +598,16 @@ const knownCompatibleScreensVersion = "3.20.0";
 
 function hasScreensFabricCompatibilityRisk(result: MigrationPatternAuditFacts) {
   const screensVersion = getDependencyVersion(result, "react-native-screens");
-  const comparison = compareVersions(screensVersion, knownCompatibleScreensVersion);
+  const comparison = compareVersions(
+    screensVersion,
+    knownCompatibleScreensVersion,
+  );
 
   return Boolean(
     targetsReactNativeAtLeast(result, 71) &&
-      hasDependencyEvidence(result, "react-native-screens") &&
-      comparison !== null &&
-      comparison < 0,
+    hasDependencyEvidence(result, "react-native-screens") &&
+    comparison !== null &&
+    comparison < 0,
   );
 }
 
@@ -630,7 +631,9 @@ function buildScreensFabricSignals(result: MigrationPatternAuditFacts) {
 }
 
 function getScreensFabricConfidence(result: MigrationPatternAuditFacts) {
-  return getDependencyVersion(result, "react-native-screens") ? "high" : "medium";
+  return getDependencyVersion(result, "react-native-screens")
+    ? "high"
+    : "medium";
 }
 
 function getLockfileVersions(
@@ -661,21 +664,21 @@ function hasNewLruCacheVersion(result: MigrationPatternAuditFacts) {
 function hasMetroBabelLruCacheRisk(result: MigrationPatternAuditFacts) {
   const hasMetroEvidence = Boolean(
     result.hasMetroConfig ||
-      hasDependency(result, "metro-react-native-babel-preset") ||
-      hasDependency(result, "metro") ||
-      hasDependency(result, "metro-config"),
+    hasDependency(result, "metro-react-native-babel-preset") ||
+    hasDependency(result, "metro") ||
+    hasDependency(result, "metro-config"),
   );
   const hasBabelEvidence = Boolean(
     result.hasBabelConfig ||
-      hasDependency(result, "@babel/core") ||
-      hasDependency(result, "@babel/runtime"),
+    hasDependency(result, "@babel/core") ||
+    hasDependency(result, "@babel/runtime"),
   );
 
   return Boolean(
     hasMetroEvidence &&
-      hasBabelEvidence &&
-      hasNewLruCacheVersion(result) &&
-      !hasCompatibleDirectLruCachePin(result),
+    hasBabelEvidence &&
+    hasNewLruCacheVersion(result) &&
+    !hasCompatibleDirectLruCachePin(result),
   );
 }
 
@@ -686,9 +689,12 @@ function buildMetroBabelLruSignals(result: MigrationPatternAuditFacts) {
 
   if (result.hasMetroConfig) signals.push("Metro config is present.");
   if (result.hasBabelConfig) signals.push("Babel config is present.");
-  if (directVersion) signals.push(`Direct lru-cache version: ${directVersion}.`);
+  if (directVersion)
+    signals.push(`Direct lru-cache version: ${directVersion}.`);
   if (lockfileVersions.length) {
-    signals.push(`Lockfile lru-cache versions: ${lockfileVersions.join(", ")}.`);
+    signals.push(
+      `Lockfile lru-cache versions: ${lockfileVersions.join(", ")}.`,
+    );
   }
 
   signals.push("Metro/Babel symptom to watch: _lruCache is not a constructor.");
@@ -704,20 +710,23 @@ function isAndroidGradlePluginOlderThan(
   result: MigrationPatternAuditFacts,
   version: string,
 ) {
-  const comparison = compareVersions(result.nativeVersions?.androidGradlePlugin, version);
+  const comparison = compareVersions(
+    result.nativeVersions?.androidGradlePlugin,
+    version,
+  );
   return comparison !== null && comparison < 0;
 }
 
 function hasRn071AndroidGradleRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     targetsReactNativeAtLeast(result, 71) &&
-      result.hasAndroid &&
-      (result.androidUsesLegacyReactGradleApply ||
-        result.androidUsesLegacyReactNativeDependency ||
-        result.androidUsesProjectExtReact ||
-        result.androidUsesFacebookReactPlugin === false ||
-        result.androidUsesReactAndroidDependency === false ||
-        isAndroidGradlePluginOlderThan(result, "7.3.0")),
+    result.hasAndroid &&
+    (result.androidUsesLegacyReactGradleApply ||
+      result.androidUsesLegacyReactNativeDependency ||
+      result.androidUsesProjectExtReact ||
+      result.androidUsesFacebookReactPlugin === false ||
+      result.androidUsesReactAndroidDependency === false ||
+      isAndroidGradlePluginOlderThan(result, "7.3.0")),
   );
 }
 
@@ -745,7 +754,9 @@ function buildRn071AndroidGradleSignals(result: MigrationPatternAuditFacts) {
   }
 
   if (result.androidUsesLegacyReactNativeDependency) {
-    signals.push("Android app uses legacy com.facebook.react:react-native dependency.");
+    signals.push(
+      "Android app uses legacy com.facebook.react:react-native dependency.",
+    );
   }
 
   if (result.androidUsesProjectExtReact) {
@@ -753,7 +764,9 @@ function buildRn071AndroidGradleSignals(result: MigrationPatternAuditFacts) {
   }
 
   if (result.androidUsesFacebookReactPlugin === false) {
-    signals.push("Android app does not use the com.facebook.react Gradle plugin.");
+    signals.push(
+      "Android app does not use the com.facebook.react Gradle plugin.",
+    );
   }
 
   if (result.androidUsesReactAndroidDependency === false) {
@@ -784,7 +797,9 @@ function hasNavigationEvidence(result: MigrationPatternAuditFacts) {
   ];
 
   return knownNavigationPackages.some(
-    (packageName) => hasDependency(result, packageName) || hasPackageUsage(result, packageName),
+    (packageName) =>
+      hasDependency(result, packageName) ||
+      hasPackageUsage(result, packageName),
   );
 }
 
@@ -818,7 +833,10 @@ function hasClipboardEvidence(result: MigrationPatternAuditFacts) {
   return (
     hasDependency(result, "@react-native-clipboard/clipboard") ||
     hasPackageUsage(result, "@react-native-clipboard/clipboard") ||
-    (result.deprecatedApiFindings?.some((finding) => finding.api === "Clipboard") ?? false)
+    (result.deprecatedApiFindings?.some(
+      (finding) => finding.api === "Clipboard",
+    ) ??
+      false)
   );
 }
 
@@ -827,7 +845,10 @@ function dependencyVersionIsBelow(
   packageName: string,
   version: string,
 ) {
-  const comparison = compareVersions(getDependencyVersion(result, packageName), version);
+  const comparison = compareVersions(
+    getDependencyVersion(result, packageName),
+    version,
+  );
   return comparison !== null && comparison < 0;
 }
 
@@ -846,7 +867,9 @@ function buildVersionedDependencySignals(
   }
 
   if (threshold) {
-    signals.push(`Conservative version threshold used by this heuristic: ${threshold}.`);
+    signals.push(
+      `Conservative version threshold used by this heuristic: ${threshold}.`,
+    );
   }
 
   return signals;
@@ -855,13 +878,15 @@ function buildVersionedDependencySignals(
 function hasReactNativeVideoExoplayerRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     result.hasAndroid &&
-      targetsReactNativeAtLeast(result, 71) &&
-      hasDependencyEvidence(result, "react-native-video") &&
-      dependencyVersionIsBelow(result, "react-native-video", "6.0.0"),
+    targetsReactNativeAtLeast(result, 71) &&
+    hasDependencyEvidence(result, "react-native-video") &&
+    dependencyVersionIsBelow(result, "react-native-video", "6.0.0"),
   );
 }
 
-function buildReactNativeVideoExoplayerSignals(result: MigrationPatternAuditFacts) {
+function buildReactNativeVideoExoplayerSignals(
+  result: MigrationPatternAuditFacts,
+) {
   return [
     ...(result.hasAndroid ? ["Android project is present."] : []),
     ...(targetsReactNativeAtLeast(result, 71)
@@ -878,24 +903,28 @@ function getLegacyAnnotationRiskPackages(result: MigrationPatternAuditFacts) {
   );
 }
 
-function hasModernAndroidToolingRiskContext(result: MigrationPatternAuditFacts) {
+function hasModernAndroidToolingRiskContext(
+  result: MigrationPatternAuditFacts,
+) {
   return Boolean(
     targetsReactNativeAtLeast(result, 71) ||
-      result.androidUsesFacebookReactPlugin ||
-      result.androidUsesReactAndroidDependency ||
-      !isAndroidGradlePluginOlderThan(result, "7.3.0"),
+    result.androidUsesFacebookReactPlugin ||
+    result.androidUsesReactAndroidDependency ||
+    !isAndroidGradlePluginOlderThan(result, "7.3.0"),
   );
 }
 
 function hasLegacyAndroidAnnotationRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     result.hasAndroid &&
-      hasModernAndroidToolingRiskContext(result) &&
-      getLegacyAnnotationRiskPackages(result).length > 0,
+    hasModernAndroidToolingRiskContext(result) &&
+    getLegacyAnnotationRiskPackages(result).length > 0,
   );
 }
 
-function buildLegacyAndroidAnnotationSignals(result: MigrationPatternAuditFacts) {
+function buildLegacyAndroidAnnotationSignals(
+  result: MigrationPatternAuditFacts,
+) {
   const packages = getLegacyAnnotationRiskPackages(result);
   const signals: string[] = [];
 
@@ -904,7 +933,9 @@ function buildLegacyAndroidAnnotationSignals(result: MigrationPatternAuditFacts)
     signals.push("RN version or upgrade path includes 0.71 or newer.");
   }
   if (result.nativeVersions?.androidGradlePlugin) {
-    signals.push(`Android Gradle Plugin detected: ${result.nativeVersions.androidGradlePlugin}.`);
+    signals.push(
+      `Android Gradle Plugin detected: ${result.nativeVersions.androidGradlePlugin}.`,
+    );
   }
   if (packages.length) {
     signals.push(
@@ -913,7 +944,9 @@ function buildLegacyAndroidAnnotationSignals(result: MigrationPatternAuditFacts)
         .join(", ")}.`,
     );
   }
-  signals.push("Symptoms to watch: extractAnnotations, generateTypedefs, and typedefs.txt failures.");
+  signals.push(
+    "Symptoms to watch: extractAnnotations, generateTypedefs, and typedefs.txt failures.",
+  );
 
   return signals;
 }
@@ -921,8 +954,8 @@ function buildLegacyAndroidAnnotationSignals(result: MigrationPatternAuditFacts)
 function hasUnusedMlkitFlavorRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     result.hasAndroid &&
-      hasDependencyEvidence(result, "react-native-camera") &&
-      dependencyVersionIsBelow(result, "react-native-camera", "4.0.0"),
+    hasDependencyEvidence(result, "react-native-camera") &&
+    dependencyVersionIsBelow(result, "react-native-camera", "4.0.0"),
   );
 }
 
@@ -937,14 +970,15 @@ function buildUnusedMlkitFlavorSignals(result: MigrationPatternAuditFacts) {
 
 function hasLegacySvgTransformerRisk(result: MigrationPatternAuditFacts) {
   const hasSvgEvidence = Boolean(
-    hasDependency(result, "react-native-svg") || hasPackageUsage(result, "react-native-svg"),
+    hasDependency(result, "react-native-svg") ||
+    hasPackageUsage(result, "react-native-svg"),
   );
 
   return Boolean(
     targetsReactNativeAtLeast(result, 71) &&
-      hasSvgEvidence &&
-      hasDependency(result, "react-native-svg-transformer") &&
-      dependencyVersionIsBelow(result, "react-native-svg-transformer", "1.0.0"),
+    hasSvgEvidence &&
+    hasDependency(result, "react-native-svg-transformer") &&
+    dependencyVersionIsBelow(result, "react-native-svg-transformer", "1.0.0"),
   );
 }
 
@@ -953,9 +987,15 @@ function buildLegacySvgTransformerSignals(result: MigrationPatternAuditFacts) {
     ...(targetsReactNativeAtLeast(result, 71)
       ? ["RN version or upgrade path includes 0.71 or newer."]
       : []),
-    ...buildVersionedDependencySignals(result, "react-native-svg-transformer", "1.0.0"),
+    ...buildVersionedDependencySignals(
+      result,
+      "react-native-svg-transformer",
+      "1.0.0",
+    ),
     ...(hasDependency(result, "react-native-svg")
-      ? [`react-native-svg version detected: ${getDependencyVersion(result, "react-native-svg")}.`]
+      ? [
+          `react-native-svg version detected: ${getDependencyVersion(result, "react-native-svg")}.`,
+        ]
       : []),
     ...(result.hasMetroConfig ? ["Metro config is present."] : []),
     "Symptoms to watch: transformFile failures and SVG import/runtime crashes.",
@@ -967,13 +1007,13 @@ const knownScreensAppCompatThreshold = "3.25.0";
 function hasScreensAppCompatRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     result.hasAndroid &&
-      targetsReactNativeAtLeast(result, 74) &&
-      hasDependencyEvidence(result, "react-native-screens") &&
-      dependencyVersionIsBelow(
-        result,
-        "react-native-screens",
-        knownScreensAppCompatThreshold,
-      ),
+    targetsReactNativeAtLeast(result, 74) &&
+    hasDependencyEvidence(result, "react-native-screens") &&
+    dependencyVersionIsBelow(
+      result,
+      "react-native-screens",
+      knownScreensAppCompatThreshold,
+    ),
   );
 }
 
@@ -992,23 +1032,35 @@ function buildScreensAppCompatSignals(result: MigrationPatternAuditFacts) {
   ];
 }
 
-function hasNativeUiComponentRegistrationRisk(result: MigrationPatternAuditFacts) {
+function hasNativeUiComponentRegistrationRisk(
+  result: MigrationPatternAuditFacts,
+) {
   return Boolean(
     result.hasIOS &&
-      targetsReactNativeAtLeast(result, 71) &&
-      hasDependencyEvidence(result, "react-native-radial-gradient") &&
-      !dependencyVersionIsBelow(result, "react-native-radial-gradient", "1.0.0") &&
-      dependencyVersionIsBelow(result, "react-native-radial-gradient", "1.2.0"),
+    targetsReactNativeAtLeast(result, 71) &&
+    hasDependencyEvidence(result, "react-native-radial-gradient") &&
+    !dependencyVersionIsBelow(
+      result,
+      "react-native-radial-gradient",
+      "1.0.0",
+    ) &&
+    dependencyVersionIsBelow(result, "react-native-radial-gradient", "1.2.0"),
   );
 }
 
-function buildNativeUiComponentRegistrationSignals(result: MigrationPatternAuditFacts) {
+function buildNativeUiComponentRegistrationSignals(
+  result: MigrationPatternAuditFacts,
+) {
   return [
     ...(result.hasIOS ? ["iOS project is present."] : []),
     ...(targetsReactNativeAtLeast(result, 71)
       ? ["RN version or upgrade path includes 0.71 or newer."]
       : []),
-    ...buildVersionedDependencySignals(result, "react-native-radial-gradient", "1.2.0"),
+    ...buildVersionedDependencySignals(
+      result,
+      "react-native-radial-gradient",
+      "1.2.0",
+    ),
     "react-native-radial-gradient exposes native UI component SRSRadialGradient via requireNativeComponent.",
     "Known package line has weak/missing iOS podspec autolinking support in published artifacts.",
   ];
@@ -1017,7 +1069,7 @@ function buildNativeUiComponentRegistrationSignals(result: MigrationPatternAudit
 function hasCircularBarrelImportRisk(result: MigrationPatternAuditFacts) {
   return Boolean(
     result.barrelAnalysis?.hasLargeBarrels &&
-      result.barrelAnalysis.barrelCount > 0,
+    result.barrelAnalysis.barrelCount > 0,
   );
 }
 
@@ -1090,8 +1142,7 @@ function hasSoLoaderMergedLibRisk(result: MigrationPatternAuditFacts) {
   const rnMinor = getMinor(
     normalizeVersion(result.reactNativeSemver ?? result.reactNative),
   );
-  const targetsRn76 =
-    rnMinor !== null && rnMinor >= 76;
+  const targetsRn76 = rnMinor !== null && rnMinor >= 76;
   const upgradeTargets76 = upgradePathMentionsAtLeast(result, 76);
   if (!targetsRn76 && !upgradeTargets76) return false;
 
@@ -1104,8 +1155,7 @@ function hasSoLoaderMergedLibRisk(result: MigrationPatternAuditFacts) {
 function buildSoLoaderMergedLibSignals(result: MigrationPatternAuditFacts) {
   const signals: string[] = [];
 
-  const rnMinorRaw =
-    result.reactNativeSemver ?? result.reactNative;
+  const rnMinorRaw = result.reactNativeSemver ?? result.reactNative;
   signals.push(`React Native version: ${rnMinorRaw}.`);
 
   if (result.hasAndroid) signals.push("Android platform detected.");
@@ -1161,231 +1211,350 @@ function getSoLoaderMergedLibConfidence(result: MigrationPatternAuditFacts) {
   return "low" as const;
 }
 
+function getReactNativeVideoRawVersion(result: MigrationPatternAuditFacts) {
+  return getDependencyVersion(result, "react-native-video");
+}
+
+function reactNativeVideoVersionContainsAlphaBetaRc(rawVersion: string) {
+  return /(?:^|[\s.-])(alpha|beta|rc)(?:\d|[\s.-]|$)/i.test(rawVersion);
+}
+
+function hasReactNativeVideoAlphaLegacyVersionRisk(
+  result: MigrationPatternAuditFacts,
+) {
+  const rawVersion = getReactNativeVideoRawVersion(result);
+  if (!rawVersion) return false;
+
+  const normalized = normalizeVersion(rawVersion);
+  const major = getMajor(normalized);
+
+  if (reactNativeVideoVersionContainsAlphaBetaRc(rawVersion)) return true;
+
+  if (major !== null && major >= 6) return false;
+
+  if (major !== null && major < 6) return true;
+
+  return false;
+}
+
+function buildReactNativeVideoAlphaLegacyVersionSignals(
+  result: MigrationPatternAuditFacts,
+) {
+  const rawVersion = getReactNativeVideoRawVersion(result);
+  const rnVersion = normalizeVersion(
+    result.reactNativeSemver ?? result.reactNative,
+  );
+  const signals: string[] = [];
+
+  if (rawVersion) {
+    signals.push(`react-native-video version: ${rawVersion}.`);
+  }
+
+  if (rawVersion && reactNativeVideoVersionContainsAlphaBetaRc(rawVersion)) {
+    const prerelease =
+      rawVersion.match(/(alpha|beta|rc)/i)?.[1]?.toLowerCase() ?? "";
+    signals.push(`${prerelease} release detected.`);
+  }
+
+  if (rnVersion) {
+    signals.push(`React Native version: ${rnVersion}.`);
+  }
+
+  signals.push("video playback dependency present.");
+
+  if (result.hasAndroid) {
+    signals.push("Android project detected.");
+  }
+
+  if (result.hasIOS) {
+    signals.push("iOS project detected.");
+  }
+
+  if (
+    rawVersion &&
+    result.patchFiles?.some((patch) =>
+      patch.toLowerCase().includes("react-native-video"),
+    )
+  ) {
+    signals.push("Legacy react-native-video patch detected.");
+  }
+
+  return signals;
+}
+
+function getReactNativeVideoAlphaLegacyVersionConfidence(
+  result: MigrationPatternAuditFacts,
+): "low" | "medium" | "high" {
+  const rawVersion = getReactNativeVideoRawVersion(result);
+  if (!rawVersion) return "low";
+
+  if (reactNativeVideoVersionContainsAlphaBetaRc(rawVersion)) return "high";
+
+  const normalized = normalizeVersion(rawVersion);
+  const major = getMajor(normalized);
+
+  if (major !== null && major < 5) return "high";
+
+  if (major === 5) {
+    const rnMinor = getMinor(
+      normalizeVersion(result.reactNativeSemver ?? result.reactNative),
+    );
+    if (rnMinor !== null && rnMinor >= 74) return "medium";
+    return "low";
+  }
+
+  return "low";
+}
+
 export function detectMigrationPatterns(
   result: MigrationPatternAuditFacts,
 ): MigrationPattern[] {
-  return migrationPatterns.filter((pattern) => {
-    if (pattern.id === "PATTERN-001") {
-      const startScript = result.scripts?.start ?? "";
-      return (
-        isReactNativeOlderThan(result, 69) &&
-        startScript.includes("react-native start") &&
-        !startScript.includes("openssl-legacy-provider")
-      );
-    }
+  return migrationPatterns
+    .filter((pattern) => {
+      if (pattern.id === "PATTERN-001") {
+        const startScript = result.scripts?.start ?? "";
+        return (
+          isReactNativeOlderThan(result, 69) &&
+          startScript.includes("react-native start") &&
+          !startScript.includes("openssl-legacy-provider")
+        );
+      }
 
-    if (pattern.id === "PATTERN-002") {
-      return (
-        hasNavigationEvidence(result) &&
-        (hasRiskyDependency(result, "react-native-gesture-handler") ||
-          hasRiskyDependency(result, "react-native-screens") ||
-          hasDependency(result, "react-native-gesture-handler") ||
-          hasDependency(result, "react-native-screens"))
-      );
-    }
+      if (pattern.id === "PATTERN-002") {
+        return (
+          hasNavigationEvidence(result) &&
+          (hasRiskyDependency(result, "react-native-gesture-handler") ||
+            hasRiskyDependency(result, "react-native-screens") ||
+            hasDependency(result, "react-native-gesture-handler") ||
+            hasDependency(result, "react-native-screens"))
+        );
+      }
 
-    if (pattern.id === "PATTERN-003") {
-      return Boolean(
-        result.typescript &&
-          (isReactNativeOlderThan(result, 69) || upgradePathMentions(result, 68)),
-      );
-    }
+      if (pattern.id === "PATTERN-003") {
+        return Boolean(
+          result.typescript &&
+          (isReactNativeOlderThan(result, 69) ||
+            upgradePathMentions(result, 68)),
+        );
+      }
 
-    if (pattern.id === "PATTERN-004") {
-      return Boolean(result.hasAndroid && hasClipboardEvidence(result));
-    }
+      if (pattern.id === "PATTERN-004") {
+        return Boolean(result.hasAndroid && hasClipboardEvidence(result));
+      }
 
-    if (pattern.id === "PATTERN-005") {
-      return Boolean(
-        result.hasPodfile &&
+      if (pattern.id === "PATTERN-005") {
+        return Boolean(
+          result.hasPodfile &&
           (isReactNativeMinor(result, 68) || upgradePathMentions(result, 68)),
-      );
-    }
+        );
+      }
 
-    if (pattern.id === "PATTERN-006") {
-      return Boolean(
-        result.hasPodfile &&
+      if (pattern.id === "PATTERN-006") {
+        return Boolean(
+          result.hasPodfile &&
           (isReactNativeMinor(result, 68) || upgradePathMentions(result, 68)),
-      );
-    }
+        );
+      }
 
-    if (pattern.id === "PATTERN-008") {
-      return Boolean(
-        hasReactNativePermissionsEvidence(result) &&
+      if (pattern.id === "PATTERN-008") {
+        return Boolean(
+          hasReactNativePermissionsEvidence(result) &&
           result.hasIOS &&
           (hasPermissionsHandlerConfigurationIssue(result) ||
             hasMigrationArea(result, "Permissions")),
-      );
-    }
+        );
+      }
 
-    if (pattern.id === "PATTERN-007") {
-      const rnMinor = getMinor(
-        normalizeVersion(result.reactNativeSemver ?? result.reactNative),
-      );
-      if (rnMinor === null) return false;
+      if (pattern.id === "PATTERN-007") {
+        const rnMinor = getMinor(
+          normalizeVersion(result.reactNativeSemver ?? result.reactNative),
+        );
+        if (rnMinor === null) return false;
 
-      return toolingVersionSkewPackages.some((pkg) => {
-        const pkgMinor = getToolingVersionMinor(result, pkg);
-        return pkgMinor !== null && pkgMinor - rnMinor >= 3;
-      });
-    }
+        return toolingVersionSkewPackages.some((pkg) => {
+          const pkgMinor = getToolingVersionMinor(result, pkg);
+          return pkgMinor !== null && pkgMinor - rnMinor >= 3;
+        });
+      }
 
-    if (pattern.id === "PATTERN-009") {
-      return hasRn071PodfileConfigRisk(result);
-    }
+      if (pattern.id === "PATTERN-009") {
+        return hasRn071PodfileConfigRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-010") {
-      return hasScreensFabricCompatibilityRisk(result);
-    }
+      if (pattern.id === "PATTERN-010") {
+        return hasScreensFabricCompatibilityRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-011") {
-      return hasMetroBabelLruCacheRisk(result);
-    }
+      if (pattern.id === "PATTERN-011") {
+        return hasMetroBabelLruCacheRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-012") {
-      return hasRn071AndroidGradleRisk(result);
-    }
+      if (pattern.id === "PATTERN-012") {
+        return hasRn071AndroidGradleRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-013") {
-      return hasReactNativeVideoExoplayerRisk(result);
-    }
+      if (pattern.id === "PATTERN-013") {
+        return hasReactNativeVideoExoplayerRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-014") {
-      return hasLegacyAndroidAnnotationRisk(result);
-    }
+      if (pattern.id === "PATTERN-014") {
+        return hasLegacyAndroidAnnotationRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-015") {
-      return hasUnusedMlkitFlavorRisk(result);
-    }
+      if (pattern.id === "PATTERN-015") {
+        return hasUnusedMlkitFlavorRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-016") {
-      return hasLegacySvgTransformerRisk(result);
-    }
+      if (pattern.id === "PATTERN-016") {
+        return hasLegacySvgTransformerRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-017") {
-      return hasScreensAppCompatRisk(result);
-    }
+      if (pattern.id === "PATTERN-017") {
+        return hasScreensAppCompatRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-018") {
-      return hasNativeUiComponentRegistrationRisk(result);
-    }
+      if (pattern.id === "PATTERN-018") {
+        return hasNativeUiComponentRegistrationRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-019") {
-      return hasCircularBarrelImportRisk(result);
-    }
+      if (pattern.id === "PATTERN-019") {
+        return hasCircularBarrelImportRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-020") {
-      return hasSoLoaderMergedLibRisk(result);
-    }
+      if (pattern.id === "PATTERN-020") {
+        return hasSoLoaderMergedLibRisk(result);
+      }
 
-    return false;
-  }).map((pattern) => {
-    if (pattern.id === "PATTERN-008") {
-      return {
-        ...pattern,
-        confidence: getPermissionsPatternConfidence(result),
-        detectedSignals: buildPermissionsPatternSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-022") {
+        return hasReactNativeVideoAlphaLegacyVersionRisk(result);
+      }
 
-    if (pattern.id === "PATTERN-009") {
-      return {
-        ...pattern,
-        confidence: getRn071PodfileConfidence(result),
-        detectedSignals: buildRn071PodfileSignals(result),
-      };
-    }
+      return false;
+    })
+    .map((pattern) => {
+      if (pattern.id === "PATTERN-008") {
+        return {
+          ...pattern,
+          confidence: getPermissionsPatternConfidence(result),
+          detectedSignals: buildPermissionsPatternSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-010") {
-      return {
-        ...pattern,
-        confidence: getScreensFabricConfidence(result),
-        detectedSignals: buildScreensFabricSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-009") {
+        return {
+          ...pattern,
+          confidence: getRn071PodfileConfidence(result),
+          detectedSignals: buildRn071PodfileSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-011") {
-      return {
-        ...pattern,
-        confidence: getMetroBabelLruConfidence(result),
-        detectedSignals: buildMetroBabelLruSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-010") {
+        return {
+          ...pattern,
+          confidence: getScreensFabricConfidence(result),
+          detectedSignals: buildScreensFabricSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-012") {
-      return {
-        ...pattern,
-        confidence: getRn071AndroidGradleConfidence(result),
-        detectedSignals: buildRn071AndroidGradleSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-011") {
+        return {
+          ...pattern,
+          confidence: getMetroBabelLruConfidence(result),
+          detectedSignals: buildMetroBabelLruSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-013") {
-      return {
-        ...pattern,
-        confidence: getDependencyVersion(result, "react-native-video") ? "high" : "medium",
-        detectedSignals: buildReactNativeVideoExoplayerSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-012") {
+        return {
+          ...pattern,
+          confidence: getRn071AndroidGradleConfidence(result),
+          detectedSignals: buildRn071AndroidGradleSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-014") {
-      return {
-        ...pattern,
-        confidence: result.nativeVersions?.androidGradlePlugin ? "medium" : "low",
-        detectedSignals: buildLegacyAndroidAnnotationSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-013") {
+        return {
+          ...pattern,
+          confidence: getDependencyVersion(result, "react-native-video")
+            ? "high"
+            : "medium",
+          detectedSignals: buildReactNativeVideoExoplayerSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-015") {
-      return {
-        ...pattern,
-        confidence: getDependencyVersion(result, "react-native-camera") ? "high" : "medium",
-        detectedSignals: buildUnusedMlkitFlavorSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-014") {
+        return {
+          ...pattern,
+          confidence: result.nativeVersions?.androidGradlePlugin
+            ? "medium"
+            : "low",
+          detectedSignals: buildLegacyAndroidAnnotationSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-016") {
-      return {
-        ...pattern,
-        confidence: result.hasMetroConfig ? "high" : "medium",
-        detectedSignals: buildLegacySvgTransformerSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-015") {
+        return {
+          ...pattern,
+          confidence: getDependencyVersion(result, "react-native-camera")
+            ? "high"
+            : "medium",
+          detectedSignals: buildUnusedMlkitFlavorSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-017") {
-      return {
-        ...pattern,
-        confidence: getDependencyVersion(result, "react-native-screens") ? "high" : "medium",
-        detectedSignals: buildScreensAppCompatSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-016") {
+        return {
+          ...pattern,
+          confidence: result.hasMetroConfig ? "high" : "medium",
+          detectedSignals: buildLegacySvgTransformerSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-018") {
-      return {
-        ...pattern,
-        confidence: "high",
-        detectedSignals: buildNativeUiComponentRegistrationSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-017") {
+        return {
+          ...pattern,
+          confidence: getDependencyVersion(result, "react-native-screens")
+            ? "high"
+            : "medium",
+          detectedSignals: buildScreensAppCompatSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-019") {
-      return {
-        ...pattern,
-        confidence: getCircularBarrelConfidence(result),
-        detectedSignals: buildCircularBarrelImportSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-018") {
+        return {
+          ...pattern,
+          confidence: "high",
+          detectedSignals: buildNativeUiComponentRegistrationSignals(result),
+        };
+      }
 
-    if (pattern.id === "PATTERN-020") {
-      return {
-        ...pattern,
-        confidence: getSoLoaderMergedLibConfidence(result),
-        detectedSignals: buildSoLoaderMergedLibSignals(result),
-      };
-    }
+      if (pattern.id === "PATTERN-019") {
+        return {
+          ...pattern,
+          confidence: getCircularBarrelConfidence(result),
+          detectedSignals: buildCircularBarrelImportSignals(result),
+        };
+      }
 
-    return pattern;
-  });
+      if (pattern.id === "PATTERN-020") {
+        return {
+          ...pattern,
+          confidence: getSoLoaderMergedLibConfidence(result),
+          detectedSignals: buildSoLoaderMergedLibSignals(result),
+        };
+      }
+
+      if (pattern.id === "PATTERN-022") {
+        return {
+          ...pattern,
+          confidence: getReactNativeVideoAlphaLegacyVersionConfidence(result),
+          detectedSignals:
+            buildReactNativeVideoAlphaLegacyVersionSignals(result),
+        };
+      }
+
+      return pattern;
+    });
 }
 
 export function renderMigrationPatternsMarkdown(patterns: MigrationPattern[]) {

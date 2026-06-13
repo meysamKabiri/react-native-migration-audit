@@ -1,18 +1,7 @@
-type Severity = "critical" | "high" | "medium" | "low";
-
-type MigrationArea = {
-  area: string;
-  risk: "high" | "medium" | "low";
-  packages: string[];
-};
-
-type NativeModuleGroup = {
-  name: string;
-  platforms: ("android" | "ios")[];
-  files: string[];
-  findingTypes: string[];
-  severity: Severity;
-};
+import type { MigrationArea } from "../models/MigrationArea";
+import type { RiskyDependency } from "../models/Risk";
+import type { BaselineReadiness } from "../models/BaselineReadiness";
+import type { NativeModuleGroup } from "../scanners/nativeModuleScanner";
 
 type AuditResultForMigrationTasks = {
   projectName: string;
@@ -35,19 +24,8 @@ type AuditResultForMigrationTasks = {
     gradle: string | null;
     hasUseFrameworks: boolean;
   };
-  baselineReadiness: {
-    status: "ready" | "warning" | "not-ready";
-    summary: string;
-    blockers: string[];
-    warnings: string[];
-    requiredActions: string[];
-  };
-  riskyDependencies: {
-    name: string;
-    version: string;
-    risk?: string;
-    suggestedAction?: string;
-  }[];
+  baselineReadiness: BaselineReadiness;
+  riskyDependencies: RiskyDependency[];
   migrationAreas: MigrationArea[];
   nativeModuleGroups: NativeModuleGroup[];
   astScan: {

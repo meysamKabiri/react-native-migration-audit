@@ -1,47 +1,27 @@
-export type Proposal = {
-  recommendedService:
-    | "Upgrade Audit"
-    | "Upgrade Sprint"
-    | "Maintenance Plan"
-    | "Manual Review Required";
-  priceRange: string;
-  effortRange: string;
-  rationale: string[];
-  includedScope: string[];
-  outOfScope: string[];
-  recommendedNextStep: string;
-};
+import type { Risk, RiskSeverity } from "../models/Risk";
+import type { MigrationArea } from "../models/MigrationArea";
+import type {
+  AuditProposal,
+  ComplexityScore,
+  NativeVersions,
+} from "../models/AuditResult";
 
-type Risk = {
-  severity: "critical" | "high" | "medium" | "low";
-  title: string;
-  description: string;
-};
+export type Proposal = AuditProposal;
 
 type AuditResultForProposal = {
   workflow: string;
   expo: string | null;
   hasAndroid: boolean;
   hasIOS: boolean;
-  nativeVersions: {
-    androidGradlePlugin: string | null;
-    gradle: string | null;
-    hasUseFrameworks: boolean;
-  };
-  complexityScore: {
-    score: number;
-    classification: "low" | "moderate" | "significant" | "high" | "extreme";
-  };
+  nativeVersions: NativeVersions;
+  complexityScore: Pick<ComplexityScore, "score" | "classification">;
   effortEstimate: {
     level: string;
     range: string;
   };
-  migrationAreas: {
-    area: string;
-    risk: "high" | "medium" | "low";
-  }[];
+  migrationAreas: Pick<MigrationArea, "area" | "risk">[];
   nativeModuleGroups: unknown[];
-  riskLevel: "critical" | "high" | "medium" | "low";
+  riskLevel: RiskSeverity;
   risks: Risk[];
 };
 
